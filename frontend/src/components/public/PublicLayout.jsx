@@ -22,6 +22,7 @@ export default function PublicLayout() {
     { to: '/courses', label: 'Courses' },
     { to: '/about', label: 'About Us' },
     { to: '/contact', label: 'Contact' },
+{ to: '/news', label: '📰 News' },
   ];
 
   return (

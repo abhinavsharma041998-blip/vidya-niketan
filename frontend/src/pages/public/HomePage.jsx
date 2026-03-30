@@ -252,6 +252,7 @@ export default function HomePage() {
               Browse Courses <ArrowRight size={18} />
             </Link>
             <Link to="/contact" className="btn-secondary text-base py-3.5 px-8">Contact Us</Link>
+<Link to="/news" className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold text-base py-3.5 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-orange-500/25 hover:-translate-y-0.5">📰 Live News</Link>
           </div>
         </div>
       </section>

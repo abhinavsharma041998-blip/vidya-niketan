@@ -9,6 +9,7 @@ import HomePage from './pages/public/HomePage';
 import CoursesPage from './pages/public/CoursesPage';
 import AboutPage from './pages/public/AboutPage';
 import ContactPage from './pages/public/ContactPage';
+import NewsPage from './pages/public/NewsPage';
 
 // Auth pages
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -57,6 +58,7 @@ export default function App() {
               <Route path="courses" element={<CoursesPage />} />
               <Route path="about" element={<AboutPage />} />
               <Route path="contact" element={<ContactPage />} />
+<Route path="news" element={<NewsPage />} />
             </Route>
 
             {/* Auth */}
