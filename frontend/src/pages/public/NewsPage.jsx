@@ -6,7 +6,7 @@ import {
   Zap, ChevronRight, Wifi, WifiOff
 } from 'lucide-react';
 
-const API_KEY = 'pub_71194e0e35704c8ea2b4ec6f5cab05e3';
+const API_KEY = 'pub_0fd50c7840c94548abfbef1fb5433d2f';
 const BASE_URL = 'https://newsdata.io/api/1/news';
 
 const CATEGORIES = [
