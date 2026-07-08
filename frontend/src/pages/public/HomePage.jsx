@@ -184,11 +184,10 @@ export default function HomePage() {
                 <div className="h-2 bg-gradient-to-r from-blue-500 to-indigo-600" />
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-3">
-                    <span className={`badge text-xs ${
-                      course.category === 'Professional' ? 'badge-blue' :
-                      course.category === 'Advanced' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
-                      'badge-green'
-                    }`}>{course.category}</span>
+                    <span className={`badge text-xs ${course.category === 'Professional' ? 'badge-blue' :
+                        course.category === 'Advanced' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
+                          'badge-green'
+                      }`}>{course.category}</span>
                     <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">₹{course.fees?.toLocaleString()}</span>
                   </div>
                   <h3 className="font-montserrat font-bold text-gray-900 dark:text-white text-lg mb-2 group-hover:text-blue-600 transition-colors">{course.name}</h3>
@@ -252,7 +251,7 @@ export default function HomePage() {
               Browse Courses <ArrowRight size={18} />
             </Link>
             <Link to="/contact" className="btn-secondary text-base py-3.5 px-8">Contact Us</Link>
-<Link to="/news" className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold text-base py-3.5 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-orange-500/25 hover:-translate-y-0.5">📰 Live News</Link>
+            <Link to="/news" className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold text-base py-3.5 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-orange-500/25 hover:-translate-y-0.5">📰 Live News</Link>
           </div>
         </div>
       </section>

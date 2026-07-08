@@ -11,6 +11,12 @@ const { markAttendance, getAttendance, getMyAttendance } = require('../controlle
 const { addFees, getFees, updateFees, getMyFees } = require('../controllers/feesController');
 const { sendSMSHandler, sendWhatsAppHandler, sendAnnouncement } = require('../controllers/notificationController');
 const { getDashboardStats } = require('../controllers/dashboardController');
+const {
+  getSubjects, createSubject, updateSubject, deleteSubject,
+  getQuestions, createQuestion, updateQuestion, deleteQuestion, bulkCreateQuestions,
+  getExams, getExam, createExam, updateExam, deleteExam, setExamStatus, getExamResults,
+  getAvailableExams, startExam, submitExam, getMyResults, getMyResultDetail,
+} = require('../controllers/examController');
 const { protectAdmin, protectStudent } = require('../middleware/auth');
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -56,5 +62,34 @@ router.get('/fees/me', protectStudent, getMyFees);
 router.post('/notify/sms', protectAdmin, sendSMSHandler);
 router.post('/notify/whatsapp', protectAdmin, sendWhatsAppHandler);
 router.post('/notify/announce', protectAdmin, sendAnnouncement);
+
+// ─── Exams: Subjects (Admin) ────────────────────────────────────────────────────
+router.get('/exam/subjects', protectAdmin, getSubjects);
+router.post('/exam/subjects', protectAdmin, createSubject);
+router.put('/exam/subjects/:id', protectAdmin, updateSubject);
+router.delete('/exam/subjects/:id', protectAdmin, deleteSubject);
+
+// ─── Exams: Question Bank (Admin) ───────────────────────────────────────────────
+router.get('/exam/questions', protectAdmin, getQuestions);
+router.post('/exam/questions', protectAdmin, createQuestion);
+router.post('/exam/questions/bulk', protectAdmin, bulkCreateQuestions);
+router.put('/exam/questions/:id', protectAdmin, updateQuestion);
+router.delete('/exam/questions/:id', protectAdmin, deleteQuestion);
+
+// ─── Exams: Exam management (Admin) ─────────────────────────────────────────────
+router.get('/exam/exams', protectAdmin, getExams);
+router.post('/exam/exams', protectAdmin, createExam);
+router.get('/exam/exams/:id', protectAdmin, getExam);
+router.put('/exam/exams/:id', protectAdmin, updateExam);
+router.delete('/exam/exams/:id', protectAdmin, deleteExam);
+router.put('/exam/exams/:id/status', protectAdmin, setExamStatus);
+router.get('/exam/exams/:id/results', protectAdmin, getExamResults);
+
+// ─── Exams: Student side (Student) ──────────────────────────────────────────────
+router.get('/exam/student/available', protectStudent, getAvailableExams);
+router.get('/exam/student/my-results', protectStudent, getMyResults);
+router.get('/exam/student/my-results/:id', protectStudent, getMyResultDetail);
+router.get('/exam/student/:examId/start', protectStudent, startExam);
+router.post('/exam/student/:examId/submit', protectStudent, submitExam);
 
 module.exports = router;

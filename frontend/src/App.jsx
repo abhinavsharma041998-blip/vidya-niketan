@@ -9,7 +9,6 @@ import HomePage from './pages/public/HomePage';
 import CoursesPage from './pages/public/CoursesPage';
 import AboutPage from './pages/public/AboutPage';
 import ContactPage from './pages/public/ContactPage';
-import NewsPage from './pages/public/NewsPage';
 
 // Auth pages
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -24,12 +23,16 @@ import QueriesPage from './pages/admin/QueriesPage';
 import AttendancePage from './pages/admin/AttendancePage';
 import FeesPage from './pages/admin/FeesPage';
 import AnnouncementsPage from './pages/admin/AnnouncementsPage';
+import ExamsPage from './pages/admin/ExamsPage';
+import ExamSubjectsPage from './pages/admin/ExamSubjectsPage';
 
 // Student pages
 import StudentLayout from './components/student/StudentLayout';
 import StudentDashboard from './pages/student/StudentDashboard';
 import StudentAttendancePage from './pages/student/StudentAttendancePage';
 import StudentFeesPage from './pages/student/StudentFeesPage';
+import StudentExamsPage from './pages/student/StudentExamsPage';
+import TakeExamPage from './pages/student/TakeExamPage';
 
 const ProtectedAdmin = ({ children }) => {
   const { user } = useAuth();
@@ -41,7 +44,7 @@ const ProtectedAdmin = ({ children }) => {
 const ProtectedStudent = ({ children }) => {
   const { user } = useAuth();
   if (!user) return <Navigate to="/student/login" replace />;
-  if (user.role !== 'student') return <Navigate to="/student/login" replace />;
+  if (user.role !== 'student') return <Navigate to="/" replace />;
   return children;
 };
 
@@ -58,7 +61,6 @@ export default function App() {
               <Route path="courses" element={<CoursesPage />} />
               <Route path="about" element={<AboutPage />} />
               <Route path="contact" element={<ContactPage />} />
-<Route path="news" element={<NewsPage />} />
             </Route>
 
             {/* Auth */}
@@ -74,6 +76,8 @@ export default function App() {
               <Route path="attendance" element={<AttendancePage />} />
               <Route path="fees" element={<FeesPage />} />
               <Route path="announcements" element={<AnnouncementsPage />} />
+              <Route path="exams" element={<ExamsPage />} />
+              <Route path="exam-subjects" element={<ExamSubjectsPage />} />
             </Route>
 
             {/* Student */}
@@ -81,7 +85,11 @@ export default function App() {
               <Route index element={<StudentDashboard />} />
               <Route path="attendance" element={<StudentAttendancePage />} />
               <Route path="fees" element={<StudentFeesPage />} />
+              <Route path="exams" element={<StudentExamsPage />} />
             </Route>
+
+            {/* Full-screen exam-taking view (outside the sidebar layout, own route) */}
+            <Route path="/student/exams/:examId" element={<ProtectedStudent><TakeExamPage /></ProtectedStudent>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarCheck, CreditCard, LogOut, Menu, X, GraduationCap } from 'lucide-react';
+import { LayoutDashboard, CalendarCheck, CreditCard, LogOut, Menu, X, GraduationCap, ClipboardList } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function StudentLayout() {
@@ -14,6 +14,7 @@ export default function StudentLayout() {
     { to: '/student', icon: <LayoutDashboard size={18} />, label: 'Dashboard', end: true },
     { to: '/student/attendance', icon: <CalendarCheck size={18} />, label: 'Attendance' },
     { to: '/student/fees', icon: <CreditCard size={18} />, label: 'Fees' },
+    { to: '/student/exams', icon: <ClipboardList size={18} />, label: 'Exams' },
   ];
 
   return (
