@@ -15,7 +15,7 @@ const {
   getSubjects, createSubject, updateSubject, deleteSubject,
   getQuestions, createQuestion, updateQuestion, deleteQuestion, bulkCreateQuestions,
   getExams, getExam, createExam, updateExam, deleteExam, setExamStatus, getExamResults,
-  getAvailableExams, startExam, submitExam, getMyResults, getMyResultDetail,
+  getAvailableExams, startExam, submitExam, saveProgress, getMyResults, getMyResultDetail,
 } = require('../controllers/examController');
 const { protectAdmin, protectStudent } = require('../middleware/auth');
 
@@ -90,6 +90,7 @@ router.get('/exam/student/available', protectStudent, getAvailableExams);
 router.get('/exam/student/my-results', protectStudent, getMyResults);
 router.get('/exam/student/my-results/:id', protectStudent, getMyResultDetail);
 router.get('/exam/student/:examId/start', protectStudent, startExam);
+router.put('/exam/student/:examId/progress', protectStudent, saveProgress);
 router.post('/exam/student/:examId/submit', protectStudent, submitExam);
 
 module.exports = router;

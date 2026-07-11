@@ -2,6 +2,7 @@ const Subject = require('../models/Subject');
 const Question = require('../models/Question');
 const Exam = require('../models/Exam');
 const ExamResult = require('../models/ExamResult');
+const ExamAttempt = require('../models/ExamAttempt');
 
 // ══════════════════════════════════════════════════════════════════
 // SUBJECTS
@@ -343,7 +344,60 @@ const getAvailableExams = async (req, res) => {
   }
 };
 
-// @desc  Start an exam — returns randomized questions (no correct answers exposed)
+// Build the correct-answer-stripped question list, in a fixed order, for a given set of question IDs
+const buildSafeQuestions = async (questionIds) => {
+  const questions = await Question.find({ _id: { $in: questionIds } }).populate('subject', 'name');
+  const qMap = new Map(questions.map(q => [String(q._id), q]));
+  return questionIds.map(id => {
+    const q = qMap.get(String(id));
+    if (!q) return null;
+    return { _id: q._id, subjectName: q.subject?.name, questionText: q.questionText, options: q.options };
+  }).filter(Boolean);
+};
+
+// Score a finished/expired attempt against the real answer key and store it as a permanent ExamResult.
+// Used both by an explicit Submit click and by auto-finalizing an attempt whose time ran out.
+const finalizeAttempt = async (attempt, exam) => {
+  const questions = await Question.find({ _id: { $in: attempt.questions } });
+  const qMap = new Map(questions.map(q => [String(q._id), q]));
+
+  let correctCount = 0, wrongCount = 0, unattempted = 0, score = 0;
+  const answerDocs = attempt.questions.map(qId => {
+    const q = qMap.get(String(qId));
+    const selectedOption = attempt.answers.get(String(qId));
+    const hasAnswer = selectedOption !== undefined && selectedOption !== null;
+    const isCorrect = hasAnswer && q && selectedOption === q.correctOption;
+    if (!hasAnswer) unattempted++;
+    else if (isCorrect) { correctCount++; score += exam.marksPerQuestion; }
+    else wrongCount++;
+    return {
+      question: qId,
+      selectedOption: hasAnswer ? selectedOption : null,
+      correctOption: q ? q.correctOption : null,
+      isCorrect: !!isCorrect,
+    };
+  });
+
+  const totalQuestions = attempt.questions.length;
+  const totalMarks = totalQuestions * exam.marksPerQuestion;
+
+  const result = await ExamResult.create({
+    exam: exam._id,
+    student: attempt.student,
+    answers: answerDocs,
+    correctCount, wrongCount, unattempted, totalQuestions,
+    score, totalMarks,
+    percentage: totalMarks > 0 ? Math.round((score / totalMarks) * 10000) / 100 : 0,
+    startedAt: attempt.startedAt,
+  });
+
+  await ExamAttempt.deleteOne({ _id: attempt._id });
+  return result;
+};
+
+// @desc  Start (or resume) an exam — returns randomized questions (no correct answers exposed).
+//        If the student already has an in-progress attempt (e.g. they refreshed after a power cut),
+//        the SAME question set and their saved answers-so-far are returned instead of a fresh one.
 // @route GET /api/exam/student/:examId/start
 const startExam = async (req, res) => {
   try {
@@ -359,6 +413,39 @@ const startExam = async (req, res) => {
         message: `This exam opens on ${exam.scheduledStart.toLocaleString('en-IN')}. Please come back then.`,
       });
     }
+
+    const already = await ExamResult.findOne({ exam: exam._id, student: req.student._id });
+    if (already) return res.status(400).json({ success: false, message: 'You have already attempted this exam' });
+
+    // Resume an existing in-progress attempt, if any
+    let attempt = await ExamAttempt.findOne({ exam: exam._id, student: req.student._id });
+
+    if (attempt) {
+      if (now > attempt.expiresAt) {
+        // Time ran out while they were away (power cut, tab closed, etc.) — auto-submit whatever was saved
+        await finalizeAttempt(attempt, exam);
+        return res.status(403).json({
+          success: false,
+          message: 'Your time ran out while you were away. Your saved answers were auto-submitted — check your results.',
+        });
+      }
+      const safeQuestions = await buildSafeQuestions(attempt.questions);
+      return res.json({
+        success: true,
+        data: {
+          examId: exam._id,
+          title: exam.title,
+          durationMinutes: Math.max(1, Math.ceil((attempt.expiresAt - now) / 60000)),
+          marksPerQuestion: exam.marksPerQuestion,
+          totalQuestions: safeQuestions.length,
+          questions: safeQuestions,
+          startedAt: attempt.startedAt,
+          savedAnswers: Object.fromEntries(attempt.answers), // resume with what was already saved
+          resumed: true,
+        },
+      });
+    }
+
     if (now > exam.scheduledEnd) {
       return res.status(403).json({
         success: false,
@@ -366,31 +453,28 @@ const startExam = async (req, res) => {
       });
     }
 
-    const already = await ExamResult.findOne({ exam: exam._id, student: req.student._id });
-    if (already) return res.status(400).json({ success: false, message: 'You have already attempted this exam' });
-
-    let questionSet = [];
+    // Fresh attempt: pick random questions per subject and lock them in for this student
+    let questionIds = [];
     for (const s of exam.subjects) {
       const pool = await Question.aggregate([
         { $match: { subject: s.subject._id } },
         { $sample: { size: s.numberOfQuestions } },
       ]);
-      questionSet = questionSet.concat(pool.map(q => ({ ...q, subjectName: s.subject.name })));
+      questionIds = questionIds.concat(pool.map(q => q._id));
     }
-
-    // Strip correct answers before sending to student
-    const safeQuestions = questionSet.map(q => ({
-      _id: q._id,
-      subjectName: q.subjectName,
-      questionText: q.questionText,
-      options: q.options,
-    }));
 
     // Cap the effective time given to the student by whatever's left in the admin's window,
     // so a tight scheduledEnd can't be overrun by the exam's normal duration.
     const minutesLeftInWindow = Math.floor((exam.scheduledEnd - now) / 60000);
     const effectiveDurationMinutes = Math.max(1, Math.min(exam.durationMinutes, minutesLeftInWindow));
+    const expiresAt = new Date(now.getTime() + effectiveDurationMinutes * 60000);
 
+    attempt = await ExamAttempt.create({
+      exam: exam._id, student: req.student._id, questions: questionIds,
+      answers: {}, startedAt: now, expiresAt,
+    });
+
+    const safeQuestions = await buildSafeQuestions(questionIds);
     res.json({
       success: true,
       data: {
@@ -401,6 +485,8 @@ const startExam = async (req, res) => {
         totalQuestions: safeQuestions.length,
         questions: safeQuestions,
         startedAt: now,
+        savedAnswers: {},
+        resumed: false,
       },
     });
   } catch (error) {
@@ -408,53 +494,63 @@ const startExam = async (req, res) => {
   }
 };
 
-// @desc  Submit exam answers — scored server-side against the real answer key
+// @desc  Autosave a single answer (or a batch) as the student works through the exam,
+//        so a power cut / crash / accidental tab close never loses progress.
+// @route PUT /api/exam/student/:examId/progress
+const saveProgress = async (req, res) => {
+  try {
+    const { answers } = req.body; // [{ questionId, selectedOption }]
+    if (!Array.isArray(answers)) return res.status(400).json({ success: false, message: 'answers array required' });
+
+    const attempt = await ExamAttempt.findOne({ exam: req.params.examId, student: req.student._id });
+    if (!attempt) return res.status(404).json({ success: false, message: 'No active attempt found for this exam' });
+
+    if (new Date() > attempt.expiresAt) {
+      return res.status(403).json({ success: false, message: 'Time is up for this exam' });
+    }
+
+    for (const a of answers) {
+      if (a.selectedOption === null || a.selectedOption === undefined) {
+        attempt.answers.delete(String(a.questionId));
+      } else {
+        attempt.answers.set(String(a.questionId), a.selectedOption);
+      }
+    }
+    attempt.markModified('answers');
+    await attempt.save();
+
+    res.json({ success: true, message: 'Progress saved' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc  Submit exam answers — scored server-side against the real answer key,
+//        using the saved attempt as the source of truth (any last-second answers in the
+//        request body are merged in first, so nothing typed right before Submit is lost).
 // @route POST /api/exam/student/:examId/submit
 const submitExam = async (req, res) => {
   try {
-    const { answers, startedAt } = req.body; // answers: [{ questionId, selectedOption }]
+    const { answers } = req.body; // answers: [{ questionId, selectedOption }] — optional final batch
     const exam = await Exam.findById(req.params.examId);
     if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
 
     const already = await ExamResult.findOne({ exam: exam._id, student: req.student._id });
     if (already) return res.status(400).json({ success: false, message: 'You have already submitted this exam' });
 
-    const questionIds = answers.map(a => a.questionId);
-    const questions = await Question.find({ _id: { $in: questionIds } });
-    const qMap = new Map(questions.map(q => [String(q._id), q]));
+    const attempt = await ExamAttempt.findOne({ exam: exam._id, student: req.student._id });
+    if (!attempt) {
+      return res.status(400).json({ success: false, message: 'No active attempt found — it may have already expired or been submitted' });
+    }
 
-    let correctCount = 0, wrongCount = 0, unattempted = 0, score = 0;
-    const answerDocs = answers.map(a => {
-      const q = qMap.get(String(a.questionId));
-      const isCorrect = q && a.selectedOption !== null && a.selectedOption === q.correctOption;
-      if (a.selectedOption === null || a.selectedOption === undefined) unattempted++;
-      else if (isCorrect) { correctCount++; score += exam.marksPerQuestion; }
-      else wrongCount++;
-      return {
-        question: a.questionId,
-        selectedOption: a.selectedOption ?? null,
-        correctOption: q ? q.correctOption : null,
-        isCorrect: !!isCorrect,
-      };
-    });
+    if (Array.isArray(answers)) {
+      for (const a of answers) {
+        if (a.selectedOption === null || a.selectedOption === undefined) attempt.answers.delete(String(a.questionId));
+        else attempt.answers.set(String(a.questionId), a.selectedOption);
+      }
+    }
 
-    const totalQuestions = answers.length;
-    const totalMarks = totalQuestions * exam.marksPerQuestion;
-
-    const result = await ExamResult.create({
-      exam: exam._id,
-      student: req.student._id,
-      answers: answerDocs,
-      correctCount,
-      wrongCount,
-      unattempted,
-      totalQuestions,
-      score,
-      totalMarks,
-      percentage: totalMarks > 0 ? Math.round((score / totalMarks) * 10000) / 100 : 0,
-      startedAt: startedAt || new Date(),
-    });
-
+    const result = await finalizeAttempt(attempt, exam);
     res.status(201).json({ success: true, data: result, message: 'Exam submitted' });
   } catch (error) {
     if (error.code === 11000) {
@@ -495,5 +591,5 @@ module.exports = {
   getSubjects, createSubject, updateSubject, deleteSubject,
   getQuestions, createQuestion, updateQuestion, deleteQuestion, bulkCreateQuestions,
   getExams, getExam, createExam, updateExam, deleteExam, setExamStatus, getExamResults,
-  getAvailableExams, startExam, submitExam, getMyResults, getMyResultDetail,
+  getAvailableExams, startExam, submitExam, saveProgress, getMyResults, getMyResultDetail,
 };
