@@ -57,6 +57,7 @@ const studentLogin = async (req, res) => {
         studentId: student.studentId,
         username: student.username,
         course: student.course,
+        photo: student.photo,
         role: 'student',
       },
     });

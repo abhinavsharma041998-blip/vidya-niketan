@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { BookOpen, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function StudentLoginPage() {
@@ -12,7 +12,7 @@ export default function StudentLoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await studentLogin(form.username, form.password);
-    if (result.success) navigate('/student', { replace: true });
+    if (result.success) navigate('/student');
   };
 
   return (
@@ -20,8 +20,8 @@ export default function StudentLoginPage() {
       <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '48px 48px' }} />
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <BookOpen className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden">
+            <img src="/assets/logo.png" alt="Vidya Niketan" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl font-montserrat font-bold text-white">Student Portal</h1>
           <p className="text-emerald-300 text-sm mt-1">Vidya Niketan Education Centre</p>

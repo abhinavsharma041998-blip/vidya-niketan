@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, BookOpen, MessageSquare, CalendarCheck,
-  CreditCard, Bell, Menu, X, LogOut, GraduationCap, Sun, Moon, ChevronRight,
+  CreditCard, Bell, Menu, X, LogOut, Sun, Moon, ChevronRight,
   ClipboardList, BookOpenCheck
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -32,9 +32,7 @@ export default function AdminLayout() {
     <div className={`flex flex-col h-full ${mobile ? '' : 'w-64'}`}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-100 dark:border-gray-800">
-        <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center flex-shrink-0">
-          <GraduationCap className="w-5 h-5 text-white" />
-        </div>
+        <img src="/assets/logo.png" alt="Vidya Niketan" className="w-9 h-9 rounded-xl flex-shrink-0 object-contain" />
         <div className="overflow-hidden">
           <p className="font-montserrat font-bold text-sm text-gray-900 dark:text-white leading-tight truncate">Vidya Niketan</p>
           <p className="text-xs text-blue-600 dark:text-blue-400">Admin Panel</p>

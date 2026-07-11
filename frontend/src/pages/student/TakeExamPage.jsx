@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Clock, Flag, CheckCircle2, Circle, AlertTriangle, ChevronLeft, ChevronRight, X, Loader2 } from 'lucide-react';
+import { Clock, Flag, CheckCircle2, Circle, AlertTriangle, ChevronLeft, ChevronRight, X, Loader2, UserRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
 
@@ -39,6 +39,7 @@ export default function TakeExamPage() {
   const [submitting, setSubmitting] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [saveState, setSaveState] = useState('idle'); // idle | saving | saved | error
+  const [profile, setProfile] = useState(null); // fresh student profile — used for the verification header
 
   const autosaveTimer = useRef(null);
   const pendingAnswersRef = useRef({}); // batches changes between debounced saves
@@ -47,6 +48,9 @@ export default function TakeExamPage() {
 
   // ── Load / resume the exam ────────────────────────────────────────────────
   useEffect(() => {
+    // Fetched separately and non-blocking — a slow/failed profile photo fetch should never stop the exam from loading
+    api.get('/students/me').then(r => setProfile(r.data.data)).catch(() => { });
+
     api.get(`/exam/student/${examId}/start`)
       .then(r => {
         const data = r.data.data;
@@ -229,10 +233,53 @@ export default function TakeExamPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-950 flex flex-col">
-      {/* Top bar */}
-      <header className="bg-white dark:bg-gray-900 border-b dark:border-gray-800 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-20 shadow-sm">
-        <div className="min-w-0">
-          <h1 className="font-montserrat font-bold text-gray-900 dark:text-white truncate text-sm sm:text-base">{exam.title}</h1>
+      {/* Top bar: institute branding + candidate verification photo, like an SSC exam screen */}
+      <header className="bg-white dark:bg-gray-900 border-b dark:border-gray-800 sticky top-0 z-20 shadow-sm">
+        <div className="px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3">
+          {/* Institute branding */}
+          <div className="flex items-center gap-2.5 min-w-0">
+            <img src="/assets/logo.png" alt="Vidya Niketan" className="w-9 h-9 object-contain flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="font-montserrat font-bold text-gray-900 dark:text-white text-sm truncate">Vidya Niketan Education Centre</p>
+              <p className="text-xs text-gray-400 truncate">{exam.title}</p>
+            </div>
+          </div>
+
+          {/* Timer */}
+          <div className={`hidden sm:flex items-center gap-2 font-mono font-bold text-lg px-3 py-1.5 rounded-lg flex-shrink-0 ${timeCritical ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 animate-pulse' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'}`}>
+            <Clock size={18} />
+            {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+          </div>
+
+          {/* Candidate verification photo */}
+          <div className="flex items-center gap-2.5 flex-shrink-0">
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[140px]">{profile?.name || '—'}</p>
+              <p className="text-xs text-gray-400 font-mono">{profile?.studentId || ''}</p>
+            </div>
+            {profile?.photo ? (
+              <img src={profile.photo} alt={profile.name} className="w-10 h-10 rounded-lg object-cover border-2 border-blue-200 dark:border-blue-900" />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-400">
+                <UserRound size={20} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile: name + timer row (candidate photo already shown above) */}
+        <div className="sm:hidden px-4 pb-2.5 flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{profile?.name || '—'}</p>
+            <p className="text-xs text-gray-400 font-mono">{profile?.studentId || ''}</p>
+          </div>
+          <div className={`flex items-center gap-1.5 font-mono font-bold text-base px-2.5 py-1 rounded-lg ${timeCritical ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 animate-pulse' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'}`}>
+            <Clock size={15} />
+            {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+          </div>
+        </div>
+
+        <div className="px-4 sm:px-6 pb-2">
           <p className="text-xs text-gray-400">
             {answeredCount}/{questions.length} answered
             <span className={`ml-2 ${saveState === 'saving' ? 'text-amber-500' : saveState === 'error' ? 'text-red-500' : 'text-emerald-500'}`}>
@@ -242,10 +289,6 @@ export default function TakeExamPage() {
               {saveState === 'idle' && ''}
             </span>
           </p>
-        </div>
-        <div className={`flex items-center gap-2 font-mono font-bold text-lg px-3 py-1.5 rounded-lg ${timeCritical ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 animate-pulse' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'}`}>
-          <Clock size={18} />
-          {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
         </div>
       </header>
 

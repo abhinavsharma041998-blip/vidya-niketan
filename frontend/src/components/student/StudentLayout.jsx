@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, CalendarCheck, CreditCard, LogOut, Menu, X, GraduationCap, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, CalendarCheck, CreditCard, LogOut, Menu, X, ClipboardList } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 export default function StudentLayout() {
@@ -22,9 +22,7 @@ export default function StudentLayout() {
       {/* Sidebar */}
       <aside className={`${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:relative z-50 lg:z-auto w-64 h-full bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex flex-col transition-transform duration-300 shadow-xl lg:shadow-none`}>
         <div className="flex items-center gap-3 px-5 py-5 border-b border-gray-100 dark:border-gray-800">
-          <div className="w-9 h-9 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
-            <GraduationCap className="w-5 h-5 text-white" />
-          </div>
+          <img src="/assets/logo.png" alt="Vidya Niketan" className="w-9 h-9 rounded-xl flex-shrink-0 object-contain" />
           <div>
             <p className="font-montserrat font-bold text-sm text-gray-900 dark:text-white">Student Portal</p>
             <p className="text-xs text-emerald-600">Vidya Niketan</p>
