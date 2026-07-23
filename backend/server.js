@@ -18,7 +18,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan(process.env.NODE_ENV === 'development' ? 'dev' : 'combined'));
 
 const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 });
-const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10 });
+// Anti brute-force, NOT a legitimate-traffic blocker: many students share the same school/institute
+// IP address, so counting every login attempt (including successful ones) against a low per-IP cap
+// was locking out the whole class for up to 15 minutes whenever ~10 students logged in together.
+// skipSuccessfulRequests means only FAILED attempts count towards the limit — correct credentials
+// never get blocked, no matter how many students log in at once from the same network.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  skipSuccessfulRequests: true,
+  message: { success: false, message: 'Too many failed login attempts from this network. Please try again in a few minutes.' },
+});
 app.use('/api', limiter);
 app.use('/api/admin/login', authLimiter);
 app.use('/api/student/login', authLimiter);

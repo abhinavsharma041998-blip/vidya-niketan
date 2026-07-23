@@ -20,6 +20,13 @@ const examResultSchema = new mongoose.Schema({
   percentage: { type: Number, required: true },
   startedAt: { type: Date, required: true },
   submittedAt: { type: Date, default: Date.now },
+  // Anti-cheating record, carried over from the ExamAttempt when it's finalized
+  violationCount: { type: Number, default: 0 },
+  autoSubmittedForViolations: { type: Boolean, default: false }, // true if exam was force-submitted after too many violations
+  violations: [{
+    type: { type: String, enum: ['tab_switch', 'window_blur', 'fullscreen_exit', 'copy_paste'] },
+    at: { type: Date },
+  }],
 }, { timestamps: true });
 
 // A student can attempt a given exam only once

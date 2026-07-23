@@ -4,6 +4,10 @@ const Exam = require('../models/Exam');
 const ExamResult = require('../models/ExamResult');
 const ExamAttempt = require('../models/ExamAttempt');
 
+// Anti-cheating: after this many tab-switch/fullscreen-exit violations, the exam is
+// auto-submitted with whatever the student had answered so far.
+const MAX_VIOLATIONS = 2;
+
 // ══════════════════════════════════════════════════════════════════
 // SUBJECTS
 // ══════════════════════════════════════════════════════════════════
@@ -357,7 +361,7 @@ const buildSafeQuestions = async (questionIds) => {
 
 // Score a finished/expired attempt against the real answer key and store it as a permanent ExamResult.
 // Used both by an explicit Submit click and by auto-finalizing an attempt whose time ran out.
-const finalizeAttempt = async (attempt, exam) => {
+const finalizeAttempt = async (attempt, exam, autoSubmittedForViolations = false) => {
   const questions = await Question.find({ _id: { $in: attempt.questions } });
   const qMap = new Map(questions.map(q => [String(q._id), q]));
 
@@ -389,6 +393,9 @@ const finalizeAttempt = async (attempt, exam) => {
     score, totalMarks,
     percentage: totalMarks > 0 ? Math.round((score / totalMarks) * 10000) / 100 : 0,
     startedAt: attempt.startedAt,
+    violationCount: attempt.violations?.length || 0,
+    violations: attempt.violations || [],
+    autoSubmittedForViolations,
   });
 
   await ExamAttempt.deleteOne({ _id: attempt._id });
@@ -442,6 +449,8 @@ const startExam = async (req, res) => {
           startedAt: attempt.startedAt,
           savedAnswers: Object.fromEntries(attempt.answers), // resume with what was already saved
           resumed: true,
+          violationCount: attempt.violations?.length || 0,
+          maxViolations: MAX_VIOLATIONS,
         },
       });
     }
@@ -487,6 +496,8 @@ const startExam = async (req, res) => {
         startedAt: now,
         savedAnswers: {},
         resumed: false,
+        violationCount: 0,
+        maxViolations: MAX_VIOLATIONS,
       },
     });
   } catch (error) {
@@ -520,6 +531,54 @@ const saveProgress = async (req, res) => {
     await attempt.save();
 
     res.json({ success: true, message: 'Progress saved' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc  Log an anti-cheating violation (tab switch, window blur, fullscreen exit, copy/paste).
+//        Once the student crosses MAX_VIOLATIONS, their exam is auto-submitted server-side
+//        with whatever was saved so far, and the frontend is told to lock them out.
+// @route POST /api/exam/student/:examId/violation
+const logViolation = async (req, res) => {
+  try {
+    const { type } = req.body; // 'tab_switch' | 'window_blur' | 'fullscreen_exit' | 'copy_paste'
+    const validTypes = ['tab_switch', 'window_blur', 'fullscreen_exit', 'copy_paste'];
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({ success: false, message: 'Invalid violation type' });
+    }
+
+    const exam = await Exam.findById(req.params.examId);
+    if (!exam) return res.status(404).json({ success: false, message: 'Exam not found' });
+
+    const attempt = await ExamAttempt.findOne({ exam: exam._id, student: req.student._id });
+    if (!attempt) {
+      // Attempt already finalized/expired — nothing to log against, just acknowledge.
+      return res.json({ success: true, violationCount: 0, autoSubmitted: false });
+    }
+
+    attempt.violations.push({ type, at: new Date() });
+    await attempt.save();
+
+    const violationCount = attempt.violations.length;
+
+    if (violationCount >= MAX_VIOLATIONS) {
+      const result = await finalizeAttempt(attempt, exam, true);
+      return res.json({
+        success: true,
+        violationCount,
+        autoSubmitted: true,
+        message: `You exceeded the maximum of ${MAX_VIOLATIONS} warnings. Your exam has been auto-submitted.`,
+        data: result,
+      });
+    }
+
+    res.json({
+      success: true,
+      violationCount,
+      autoSubmitted: false,
+      message: `Warning ${violationCount}/${MAX_VIOLATIONS}: leaving the exam window is being recorded. Your exam will be auto-submitted if you exceed the limit.`,
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -592,4 +651,5 @@ module.exports = {
   getQuestions, createQuestion, updateQuestion, deleteQuestion, bulkCreateQuestions,
   getExams, getExam, createExam, updateExam, deleteExam, setExamStatus, getExamResults,
   getAvailableExams, startExam, submitExam, saveProgress, getMyResults, getMyResultDetail,
+  logViolation,
 };

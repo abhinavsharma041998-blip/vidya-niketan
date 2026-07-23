@@ -40,11 +40,15 @@ export default function TakeExamPage() {
   const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [saveState, setSaveState] = useState('idle'); // idle | saving | saved | error
   const [profile, setProfile] = useState(null); // fresh student profile — used for the verification header
+  const [violationCount, setViolationCount] = useState(0); // anti-cheating: tab switches / fullscreen exits so far
 
   const autosaveTimer = useRef(null);
   const pendingAnswersRef = useRef({}); // batches changes between debounced saves
   const answersRef = useRef({});
   const submittedRef = useRef(false);
+  const maxViolationsRef = useRef(2);
+  const violationCooldownRef = useRef(false); // blur + visibilitychange often fire together for one switch — debounce so it's not double-counted
+  const armedRef = useRef(false); // short grace period after load so requesting fullscreen doesn't itself count as a violation
 
   // ── Load / resume the exam ────────────────────────────────────────────────
   useEffect(() => {
@@ -59,6 +63,8 @@ export default function TakeExamPage() {
         answersRef.current = data.savedAnswers || {};
         if (data.questions[0]) setVisited({ [data.questions[0]._id]: true });
         setSecondsLeft(data.durationMinutes * 60);
+        setViolationCount(data.violationCount || 0);
+        maxViolationsRef.current = data.maxViolations || 2;
         if (data.resumed) toast('Welcome back — your saved answers were restored.', { icon: '🔄' });
       })
       .catch(err => {
@@ -130,6 +136,63 @@ export default function TakeExamPage() {
       window.removeEventListener('pagehide', onUnload);
     };
   }, [examId]);
+
+  // ── Anti-cheating: report a violation to the server, warn the student, auto-submit past the limit ──
+  const reportViolation = useCallback(async (type) => {
+    if (submittedRef.current || !armedRef.current) return;
+    if (violationCooldownRef.current) return; // avoid double-counting blur+visibilitychange for the same switch
+    violationCooldownRef.current = true;
+    setTimeout(() => { violationCooldownRef.current = false; }, 1500);
+
+    try {
+      const r = await api.post(`/exam/student/${examId}/violation`, { type });
+      const { violationCount: count, autoSubmitted, message } = r.data;
+      setViolationCount(count);
+      if (autoSubmitted) {
+        submittedRef.current = true;
+        toast.error(message || 'Too many warnings — your exam has been auto-submitted', { duration: 7000 });
+        navigate('/student/exams', { state: { justSubmittedResultId: r.data.data?._id } });
+      } else {
+        toast.error(message || `Warning ${count}/${maxViolationsRef.current}: don't leave the exam window`, { duration: 5000, icon: '⚠️' });
+      }
+    } catch {
+      // Best-effort — a network hiccup here shouldn't block the student from continuing the exam.
+    }
+  }, [examId, navigate]);
+
+  // Force fullscreen for the duration of the exam, and watch for tab switches / app switches / exiting fullscreen.
+  useEffect(() => {
+    if (!exam) return;
+    armedRef.current = false;
+    const armTimer = setTimeout(() => { armedRef.current = true; }, 1500); // grace period so the fullscreen prompt itself isn't flagged
+
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => { });
+
+    const onVisibilityChange = () => { if (document.hidden) reportViolation('tab_switch'); };
+    const onBlur = () => reportViolation('window_blur');
+    const onFullscreenChange = () => { if (!document.fullscreenElement) reportViolation('fullscreen_exit'); };
+    const onCopyPaste = (e) => { e.preventDefault(); reportViolation('copy_paste'); };
+    const onContextMenu = (e) => e.preventDefault();
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('blur', onBlur);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('copy', onCopyPaste);
+    document.addEventListener('paste', onCopyPaste);
+    document.addEventListener('contextmenu', onContextMenu);
+
+    return () => {
+      clearTimeout(armTimer);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('blur', onBlur);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+      document.removeEventListener('copy', onCopyPaste);
+      document.removeEventListener('paste', onCopyPaste);
+      document.removeEventListener('contextmenu', onContextMenu);
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
+    };
+  }, [exam, reportViolation]);
 
   if (loading) {
     return (
@@ -246,9 +309,17 @@ export default function TakeExamPage() {
           </div>
 
           {/* Timer */}
-          <div className={`hidden sm:flex items-center gap-2 font-mono font-bold text-lg px-3 py-1.5 rounded-lg flex-shrink-0 ${timeCritical ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 animate-pulse' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'}`}>
-            <Clock size={18} />
-            {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+            {violationCount > 0 && (
+              <div className="flex items-center gap-1.5 font-semibold text-sm px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                <AlertTriangle size={16} />
+                {violationCount}/{maxViolationsRef.current} warnings
+              </div>
+            )}
+            <div className={`flex items-center gap-2 font-mono font-bold text-lg px-3 py-1.5 rounded-lg ${timeCritical ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 animate-pulse' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'}`}>
+              <Clock size={18} />
+              {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+            </div>
           </div>
 
           {/* Candidate verification photo */}
@@ -273,9 +344,17 @@ export default function TakeExamPage() {
             <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{profile?.name || '—'}</p>
             <p className="text-xs text-gray-400 font-mono">{profile?.studentId || ''}</p>
           </div>
-          <div className={`flex items-center gap-1.5 font-mono font-bold text-base px-2.5 py-1 rounded-lg ${timeCritical ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 animate-pulse' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'}`}>
-            <Clock size={15} />
-            {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+          <div className="flex items-center gap-1.5">
+            {violationCount > 0 && (
+              <div className="flex items-center gap-1 font-semibold text-xs px-2 py-1 rounded-lg bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                <AlertTriangle size={13} />
+                {violationCount}/{maxViolationsRef.current}
+              </div>
+            )}
+            <div className={`flex items-center gap-1.5 font-mono font-bold text-base px-2.5 py-1 rounded-lg ${timeCritical ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 animate-pulse' : 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400'}`}>
+              <Clock size={15} />
+              {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+            </div>
           </div>
         </div>
 

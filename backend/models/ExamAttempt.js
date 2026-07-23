@@ -13,6 +13,12 @@ const examAttemptSchema = new mongoose.Schema({
   answers: { type: Map, of: Number, default: {} },
   startedAt: { type: Date, required: true },
   expiresAt: { type: Date, required: true }, // startedAt + effective duration
+  // Anti-cheating: every time the student switches tab/app/window or leaves fullscreen,
+  // the frontend reports it here. Admin can see exactly how many times and when.
+  violations: [{
+    type: { type: String, enum: ['tab_switch', 'window_blur', 'fullscreen_exit', 'copy_paste'], required: true },
+    at: { type: Date, default: Date.now },
+  }],
 }, { timestamps: true });
 
 examAttemptSchema.index({ exam: 1, student: 1 }, { unique: true });

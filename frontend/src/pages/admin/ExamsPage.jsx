@@ -245,7 +245,7 @@ export default function ExamsPage() {
               ) : (
                 <table className="w-full text-sm">
                   <thead><tr className="text-left text-gray-400 border-b dark:border-gray-800">
-                    <th className="pb-2">Student</th><th className="pb-2">Score</th><th className="pb-2">%</th><th className="pb-2">Correct / Wrong / Skipped</th>
+                    <th className="pb-2">Student</th><th className="pb-2">Score</th><th className="pb-2">%</th><th className="pb-2">Correct / Wrong / Skipped</th><th className="pb-2">Warnings</th>
                   </tr></thead>
                   <tbody>
                     {results.map(r => (
@@ -254,6 +254,15 @@ export default function ExamsPage() {
                         <td className="py-2 font-semibold">{r.score}/{r.totalMarks}</td>
                         <td className="py-2">{r.percentage}%</td>
                         <td className="py-2 text-gray-500">{r.correctCount} / {r.wrongCount} / {r.unattempted}</td>
+                        <td className="py-2">
+                          {r.violationCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-400 font-semibold" title={r.autoSubmittedForViolations ? 'Auto-submitted after too many warnings' : 'Left the exam window / switched tabs'}>
+                              ⚠️ {r.violationCount}{r.autoSubmittedForViolations ? ' (auto-submitted)' : ''}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">—</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
