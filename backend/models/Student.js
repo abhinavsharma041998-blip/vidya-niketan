@@ -27,10 +27,24 @@ const studentSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-generate student ID
-studentSchema.pre('save', async function(next) {
+studentSchema.pre('save', async function (next) {
   if (!this.studentId) {
-    const count = await mongoose.model('Student').countDocuments();
-    this.studentId = `VN${String(count + 1).padStart(4, '0')}`;
+    const Student = mongoose.model('Student');
+    // Using the highest EXISTING studentId (not a document count) means deleting a student
+    // never causes a previously-used ID to be reissued and collide with a live student.
+    const lastStudent = await Student.findOne({ studentId: { $regex: /^VN\d+$/ } }).sort({ studentId: -1 });
+    let nextNum = 1;
+    if (lastStudent && lastStudent.studentId) {
+      const match = lastStudent.studentId.match(/^VN(\d+)$/);
+      if (match) nextNum = parseInt(match[1], 10) + 1;
+    }
+    let candidateId = `VN${String(nextNum).padStart(4, '0')}`;
+    // Extra safety net for the rare case of two students being added at the exact same instant
+    while (await Student.exists({ studentId: candidateId })) {
+      nextNum += 1;
+      candidateId = `VN${String(nextNum).padStart(4, '0')}`;
+    }
+    this.studentId = candidateId;
   }
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, 12);
@@ -38,7 +52,7 @@ studentSchema.pre('save', async function(next) {
   next();
 });
 
-studentSchema.methods.matchPassword = async function(enteredPassword) {
+studentSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
