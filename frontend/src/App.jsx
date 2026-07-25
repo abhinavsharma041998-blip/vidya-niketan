@@ -33,6 +33,7 @@ import StudentDashboard from './pages/student/StudentDashboard';
 import StudentAttendancePage from './pages/student/StudentAttendancePage';
 import StudentFeesPage from './pages/student/StudentFeesPage';
 import StudentExamsPage from './pages/student/StudentExamsPage';
+import StudentResultsPage from './pages/student/StudentResultsPage';
 import TakeExamPage from './pages/student/TakeExamPage';
 
 const ProtectedAdmin = ({ children }) => {
@@ -88,6 +89,7 @@ export default function App() {
               <Route path="attendance" element={<StudentAttendancePage />} />
               <Route path="fees" element={<StudentFeesPage />} />
               <Route path="exams" element={<StudentExamsPage />} />
+              <Route path="results" element={<StudentResultsPage />} />
             </Route>
 
             {/* Full-screen exam-taking view (outside the sidebar layout, own route) */}
