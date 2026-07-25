@@ -95,4 +95,19 @@ router.put('/exam/student/:examId/progress', protectStudent, saveProgress);
 router.post('/exam/student/:examId/violation', protectStudent, logViolation);
 router.post('/exam/student/:examId/submit', protectStudent, submitExam);
 
+const {
+  createManualResult, getManualResults, getManualResult, updateManualResult,
+  togglePublishManualResult, deleteManualResult, getMyManualResults,
+} = require('../controllers/manualResultController');
+
+// ── Manual Results (admin enters marks by hand, e.g. for offline/paper exams) ──
+router.post('/admin/manual-results', protectAdmin, createManualResult);
+router.get('/admin/manual-results', protectAdmin, getManualResults);
+router.get('/admin/manual-results/:id', protectAdmin, getManualResult);
+router.put('/admin/manual-results/:id', protectAdmin, updateManualResult);
+router.put('/admin/manual-results/:id/publish', protectAdmin, togglePublishManualResult);
+router.delete('/admin/manual-results/:id', protectAdmin, deleteManualResult);
+
+router.get('/student/manual-results', protectStudent, getMyManualResults);
+
 module.exports = router;

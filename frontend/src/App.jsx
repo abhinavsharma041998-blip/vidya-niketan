@@ -25,6 +25,7 @@ import FeesPage from './pages/admin/FeesPage';
 import AnnouncementsPage from './pages/admin/AnnouncementsPage';
 import ExamsPage from './pages/admin/ExamsPage';
 import ExamSubjectsPage from './pages/admin/ExamSubjectsPage';
+import ManualResultsPage from './pages/admin/ManualResultsPage';
 
 // Student pages
 import StudentLayout from './components/student/StudentLayout';
@@ -78,6 +79,7 @@ export default function App() {
               <Route path="announcements" element={<AnnouncementsPage />} />
               <Route path="exams" element={<ExamsPage />} />
               <Route path="exam-subjects" element={<ExamSubjectsPage />} />
+              <Route path="manual-results" element={<ManualResultsPage />} />
             </Route>
 
             {/* Student */}

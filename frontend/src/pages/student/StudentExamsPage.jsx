@@ -9,6 +9,7 @@ const fmt = (iso) => new Date(iso).toLocaleString('en-IN', { day: '2-digit', mon
 function StudentExamsPage() {
   const [available, setAvailable] = useState([]);
   const [results, setResults] = useState([]);
+  const [manualResults, setManualResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -16,12 +17,20 @@ function StudentExamsPage() {
     Promise.all([
       api.get('/exam/student/available'),
       api.get('/exam/student/my-results'),
-    ]).then(([a, r]) => {
+      api.get('/student/manual-results'),
+    ]).then(([a, r, m]) => {
       setAvailable(a.data.data || []);
       setResults(r.data.data || []);
+      setManualResults(m.data.data || []);
     }).catch(() => toast.error('Failed to load exams'))
       .finally(() => setLoading(false));
   }, []);
+
+  // Merge online-exam results and admin-entered manual results into one list, newest first
+  const allResults = [
+    ...results.map(r => ({ type: 'online', date: r.submittedAt, ...r })),
+    ...manualResults.map(r => ({ type: 'manual', date: r.publishedAt || r.createdAt, ...r })),
+  ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const startExam = (examId) => navigate(`/student/exams/${examId}`);
 
@@ -91,21 +100,31 @@ function StudentExamsPage() {
 
       <div>
         <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-wide">My Results</h2>
-        {results.length === 0 ? (
+        {allResults.length === 0 ? (
           <p className="text-gray-400 text-sm card p-6 text-center">No exams attempted yet.</p>
         ) : (
           <div className="card divide-y dark:divide-gray-800">
-            {results.map(r => (
-              <div key={r._id} className="flex items-center justify-between p-4">
+            {allResults.map(r => (
+              <div key={r._id} className="flex items-center justify-between p-4 flex-wrap gap-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400"><Award size={16} /></div>
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${r.type === 'manual' ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400' : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'}`}>
+                    <Award size={16} />
+                  </div>
                   <div>
-                    <p className="font-medium text-sm text-gray-900 dark:text-white">{r.exam?.title}</p>
-                    <p className="text-xs text-gray-400">{r.correctCount} correct · {r.wrongCount} wrong · {r.unattempted} skipped</p>
+                    <p className="font-medium text-sm text-gray-900 dark:text-white flex items-center gap-2">
+                      {r.type === 'manual' ? r.title : r.exam?.title}
+                      {r.type === 'manual' && <span className="badge badge-blue text-[10px] !bg-purple-100 !text-purple-700 dark:!bg-purple-900/30 dark:!text-purple-400">Offline</span>}
+                    </p>
+                    {r.type === 'online' ? (
+                      <p className="text-xs text-gray-400">{r.correctCount} correct · {r.wrongCount} wrong · {r.unattempted} skipped</p>
+                    ) : (
+                      <p className="text-xs text-gray-400">{r.subjects.map(s => `${s.subjectName}: ${s.marksObtained}/${s.maxMarks}`).join(' · ')}</p>
+                    )}
+                    {r.type === 'manual' && r.remarks && <p className="text-xs text-gray-500 italic mt-0.5">"{r.remarks}"</p>}
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-bold text-gray-900 dark:text-white">{r.score}/{r.totalMarks}</p>
+                  <p className="font-bold text-gray-900 dark:text-white">{r.type === 'manual' ? `${r.totalObtained}/${r.totalMax}` : `${r.score}/${r.totalMarks}`}</p>
                   <p className={`text-xs font-semibold ${r.percentage >= 40 ? 'text-green-600' : 'text-red-500'}`}>{r.percentage}%</p>
                 </div>
               </div>
