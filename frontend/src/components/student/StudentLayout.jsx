@@ -37,7 +37,7 @@ export default function StudentLayout() {
             <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-full flex items-center justify-center text-white font-bold">{user?.name?.[0]}</div>
             <div className="overflow-hidden">
               <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{user?.name}</p>
-              <p className="text-xs text-gray-400 truncate">{user?.course?.name || 'Student'}</p>
+              <p className="text-xs text-gray-400 truncate">{user?.studentId ? `${user.studentId} · ` : ''}{user?.course?.name || 'Student'}</p>
             </div>
           </div>
         </div>
