@@ -2,6 +2,7 @@
 // both auto-graded online exam results and admin-entered manual (offline/paper) results.
 import { useState, useEffect } from 'react';
 import { Award, CheckCircle2, XCircle, MinusCircle, TrendingUp } from 'lucide-react';
+import toast from 'react-hot-toast';
 import api from '../../utils/api';
 
 const fmt = (iso) => iso ? new Date(iso).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
@@ -17,6 +18,8 @@ export default function StudentResultsPage() {
   const [manual, setManual] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const [debugInfo, setDebugInfo] = useState('');
+
   useEffect(() => {
     Promise.all([
       api.get('/exam/student/my-results'),
@@ -24,6 +27,10 @@ export default function StudentResultsPage() {
     ]).then(([r, m]) => {
       setOnline(r.data.data || []);
       setManual(m.data.data || []);
+      setDebugInfo(`OK — online: ${r.data.data?.length ?? 0}, manual: ${m.data.data?.length ?? 0}`);
+    }).catch((err) => {
+      setDebugInfo(`ERROR — ${err.response?.status || 'network'}: ${err.response?.data?.message || err.message}`);
+      toast.error('Failed to load results — please refresh and try again');
     }).finally(() => setLoading(false));
   }, []);
 
@@ -42,6 +49,7 @@ export default function StudentResultsPage() {
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2"><Award size={24} className="text-blue-600" /> My Results</h1>
         <p className="text-gray-500 text-sm mt-1">Every result your school has published for you — online exams and offline/paper exams.</p>
+        {debugInfo && <p className="text-xs font-mono mt-2 px-2 py-1 rounded bg-yellow-50 text-yellow-800 border border-yellow-200 inline-block">DEBUG: {debugInfo}</p>}
       </div>
 
       {allResults.length === 0 ? (
