@@ -59,6 +59,8 @@ export default function TeacherLoginPage() {
         <div className="text-center mt-6">
           <Link to="/" className="text-purple-300 text-sm hover:text-white transition-colors">← Back to Website</Link>
           <span className="text-purple-600 mx-3">|</span>
+          <Link to="/student/login" className="text-purple-300 text-sm hover:text-white transition-colors">Student Login</Link>
+          <span className="text-purple-600 mx-3">|</span>
           <Link to="/admin/login" className="text-purple-300 text-sm hover:text-white transition-colors">Admin Login</Link>
         </div>
       </div>

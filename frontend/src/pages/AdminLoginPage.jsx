@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Lock, User, Eye, EyeOff } from 'lucide-react';
+import { GraduationCap, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function AdminLoginPage() {
@@ -20,8 +20,8 @@ export default function AdminLoginPage() {
       <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '48px 48px' }} />
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden">
-            <img src="/assets/logo.png" alt="Vidya Niketan" className="w-full h-full object-contain" />
+          <div className="w-16 h-16 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <GraduationCap className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-montserrat font-bold text-white">Admin Portal</h1>
           <p className="text-blue-300 text-sm mt-1">Vidya Niketan Education Centre</p>
@@ -59,6 +59,8 @@ export default function AdminLoginPage() {
           <Link to="/" className="text-blue-300 text-sm hover:text-white transition-colors">← Back to Website</Link>
           <span className="text-blue-500 mx-3">|</span>
           <Link to="/student/login" className="text-blue-300 text-sm hover:text-white transition-colors">Student Login</Link>
+          <span className="text-blue-600 mx-3">|</span>
+          <Link to="/teacher/login" className="text-blue-300 text-sm hover:text-white transition-colors">Teacher Login</Link>
         </div>
       </div>
     </div>

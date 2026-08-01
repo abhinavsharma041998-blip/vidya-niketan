@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Lock, User, Eye, EyeOff } from 'lucide-react';
+import { BookOpen, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function StudentLoginPage() {
@@ -20,8 +20,8 @@ export default function StudentLoginPage() {
       <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '48px 48px' }} />
       <div className="relative w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 overflow-hidden">
-            <img src="/assets/logo.png" alt="Vidya Niketan" className="w-full h-full object-contain" />
+          <div className="w-16 h-16 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <BookOpen className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-montserrat font-bold text-white">Student Portal</h1>
           <p className="text-emerald-300 text-sm mt-1">Vidya Niketan Education Centre</p>
@@ -58,6 +58,8 @@ export default function StudentLoginPage() {
         </div>
         <div className="text-center mt-6">
           <Link to="/" className="text-emerald-300 text-sm hover:text-white transition-colors">← Back to Website</Link>
+          <span className="text-emerald-600 mx-3">|</span>
+          <Link to="/teacher/login" className="text-emerald-300 text-sm hover:text-white transition-colors">Teacher Login</Link>
           <span className="text-emerald-600 mx-3">|</span>
           <Link to="/admin/login" className="text-emerald-300 text-sm hover:text-white transition-colors">Admin Login</Link>
         </div>

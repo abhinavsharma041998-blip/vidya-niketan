@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, Link, NavLink } from 'react-router-dom';
-import { Menu, X, Moon, Sun, ChevronUp } from 'lucide-react';
+import { Menu, X, Moon, Sun, GraduationCap, ChevronUp } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
 export default function PublicLayout() {
@@ -29,7 +29,7 @@ export default function PublicLayout() {
       {/* Preloader */}
       <div className={`preloader ${preloader ? '' : 'hidden'}`}>
         <div className="text-center">
-          <img src="/assets/logo.png" alt="Vidya Niketan" className="w-20 h-20 object-contain mx-auto mb-2" />
+          <div className="preloader-logo mb-2">VN</div>
           <p className="text-blue-200 text-sm font-poppins">Vidya Niketan Education Centre</p>
           <div className="mt-4 flex gap-1 justify-center">
             {[0, 1, 2].map(i => (
@@ -45,7 +45,9 @@ export default function PublicLayout() {
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5">
-              <img src="/assets/logo.png" alt="Vidya Niketan" className="w-10 h-10 object-contain" />
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
+                <GraduationCap className="w-6 h-6 text-white" />
+              </div>
               <div>
                 <div className="font-montserrat font-bold text-gray-900 dark:text-white text-sm leading-tight">Vidya Niketan</div>
                 <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">Education Centre</div>
@@ -70,6 +72,9 @@ export default function PublicLayout() {
               <Link to="/student/login" className="hidden sm:block text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">
                 Student Login
               </Link>
+              <Link to="/teacher/login" className="hidden sm:block text-sm font-medium text-purple-600 dark:text-purple-400 hover:underline">
+                Teacher Login
+              </Link>
               <Link to="/admin/login" className="hidden sm:block btn-primary text-sm py-2 px-4">
                 Admin
               </Link>
@@ -90,7 +95,8 @@ export default function PublicLayout() {
               </NavLink>
             ))}
             <div className="flex gap-2 pt-2 border-t dark:border-gray-800">
-              <Link to="/student/login" onClick={() => setMobileOpen(false)} className="flex-1 text-center btn-secondary text-sm py-2">Student Login</Link>
+              <Link to="/student/login" onClick={() => setMobileOpen(false)} className="flex-1 text-center btn-secondary text-sm py-2">Student</Link>
+              <Link to="/teacher/login" onClick={() => setMobileOpen(false)} className="flex-1 text-center btn-secondary text-sm py-2">Teacher</Link>
               <Link to="/admin/login" onClick={() => setMobileOpen(false)} className="flex-1 text-center btn-primary text-sm py-2">Admin</Link>
             </div>
           </div>
@@ -108,7 +114,9 @@ export default function PublicLayout() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
             <div>
               <div className="flex items-center gap-2.5 mb-4">
-                <img src="/assets/logo.png" alt="Vidya Niketan" className="w-10 h-10 object-contain" />
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center">
+                  <GraduationCap className="w-6 h-6 text-white" />
+                </div>
                 <div>
                   <div className="font-montserrat font-bold text-white text-sm">Vidya Niketan</div>
                   <div className="text-xs text-blue-400">Education Centre</div>
@@ -146,6 +154,7 @@ export default function PublicLayout() {
             <p>© {new Date().getFullYear()} Vidya Niketan Education Centre. All rights reserved.</p>
             <div className="flex gap-4">
               <Link to="/student/login" className="hover:text-blue-400 transition-colors">Student Portal</Link>
+              <Link to="/teacher/login" className="hover:text-blue-400 transition-colors">Teacher Portal</Link>
               <Link to="/admin/login" className="hover:text-blue-400 transition-colors">Admin Panel</Link>
             </div>
           </div>
