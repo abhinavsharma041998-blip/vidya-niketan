@@ -44,7 +44,7 @@ const getStudent = async (req, res) => {
 // @route POST /api/students
 const createStudent = async (req, res) => {
   try {
-    const { name, phone, email, course, username, password, fatherName, address, gender, dob, photo } = req.body;
+    const { name, phone, email, course, username, password, fatherName, address, gender, dob, photo, admissionDate } = req.body;
 
     // Check duplicate username
     const exists = await Student.findOne({ username });
@@ -53,6 +53,7 @@ const createStudent = async (req, res) => {
     const student = await Student.create({
       name, phone, email, course, username, password,
       fatherName, address, gender, dob, photo,
+      admissionDate: admissionDate || undefined, // falls back to schema default (today) if not provided
     });
 
     // Send welcome notifications

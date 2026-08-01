@@ -3,7 +3,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { adminLogin, studentLogin } = require('../controllers/authController');
+const { adminLogin, studentLogin, teacherLogin } = require('../controllers/authController');
 const { getStudents, getStudent, createStudent, updateStudent, deleteStudent, getMyProfile } = require('../controllers/studentController');
 const { getCourses, getCourse, createCourse, updateCourse, deleteCourse } = require('../controllers/courseController');
 const { getQueries, createQuery, updateQuery, deleteQuery } = require('../controllers/queryController');
@@ -16,13 +16,25 @@ const {
   getQuestions, createQuestion, updateQuestion, deleteQuestion, bulkCreateQuestions,
   getExams, getExam, createExam, updateExam, deleteExam, setExamStatus, getExamResults,
   getAvailableExams, startExam, submitExam, saveProgress, getMyResults, getMyResultDetail,
-  logViolation,
 } = require('../controllers/examController');
-const { protectAdmin, protectStudent } = require('../middleware/auth');
+const { getTeachers, createTeacher, updateTeacher, deleteTeacher, getMyTeacherProfile } = require('../controllers/teacherController');
+const { uploadMaterial, getAllMaterials, getMyMaterials, getStudentMaterials, deleteMaterial } = require('../controllers/materialController');
+const upload = require('../middleware/upload');
+const { protectAdmin, protectStudent, protectTeacher, protectStaff } = require('../middleware/auth');
+
+// Wraps multer so its errors (file too large, wrong type) come back as clean JSON
+// instead of crashing into the generic 500 handler.
+const handleUpload = (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) return res.status(400).json({ success: false, message: err.message || 'Upload failed' });
+    next();
+  });
+};
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 router.post('/admin/login', adminLogin);
 router.post('/student/login', studentLogin);
+router.post('/teacher/login', teacherLogin);
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 router.get('/dashboard', protectAdmin, getDashboardStats);
@@ -92,22 +104,21 @@ router.get('/exam/student/my-results', protectStudent, getMyResults);
 router.get('/exam/student/my-results/:id', protectStudent, getMyResultDetail);
 router.get('/exam/student/:examId/start', protectStudent, startExam);
 router.put('/exam/student/:examId/progress', protectStudent, saveProgress);
-router.post('/exam/student/:examId/violation', protectStudent, logViolation);
 router.post('/exam/student/:examId/submit', protectStudent, submitExam);
 
-const {
-  createManualResult, getManualResults, getManualResult, updateManualResult,
-  togglePublishManualResult, deleteManualResult, getMyManualResults,
-} = require('../controllers/manualResultController');
+// ─── Teachers (Admin manages accounts; Teacher reads own profile) ──────────────
+router.get('/teachers', protectAdmin, getTeachers);
+router.post('/teachers', protectAdmin, createTeacher);
+router.put('/teachers/:id', protectAdmin, updateTeacher);
+router.delete('/teachers/:id', protectAdmin, deleteTeacher);
+router.get('/teachers/me', protectTeacher, getMyTeacherProfile);
 
-// ── Manual Results (admin enters marks by hand, e.g. for offline/paper exams) ──
-router.post('/admin/manual-results', protectAdmin, createManualResult);
-router.get('/admin/manual-results', protectAdmin, getManualResults);
-router.get('/admin/manual-results/:id', protectAdmin, getManualResult);
-router.put('/admin/manual-results/:id', protectAdmin, updateManualResult);
-router.put('/admin/manual-results/:id/publish', protectAdmin, togglePublishManualResult);
-router.delete('/admin/manual-results/:id', protectAdmin, deleteManualResult);
-
-router.get('/student/manual-results', protectStudent, getMyManualResults);
+// ─── Study Materials (Syllabus / Notes / Assignments) ───────────────────────────
+// Upload & delete are shared by Admin and Teacher (protectStaff figures out which)
+router.post('/materials', protectStaff, handleUpload, uploadMaterial);
+router.delete('/materials/:id', protectStaff, deleteMaterial);
+router.get('/materials/admin', protectAdmin, getAllMaterials);
+router.get('/materials/mine', protectTeacher, getMyMaterials);
+router.get('/materials/student', protectStudent, getStudentMaterials);
 
 module.exports = router;

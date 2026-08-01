@@ -45,6 +45,23 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const teacherLogin = async (username, password) => {
+    setLoading(true);
+    try {
+      const { data } = await api.post('/teacher/login', { username, password });
+      localStorage.setItem('vn_token', data.token);
+      localStorage.setItem('vn_user', JSON.stringify(data.user));
+      setUser(data.user);
+      toast.success(`Welcome, ${data.user.name}!`);
+      return { success: true };
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Login failed');
+      return { success: false };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('vn_token');
     localStorage.removeItem('vn_user');
@@ -53,7 +70,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, adminLogin, studentLogin, logout, isAdmin: user?.role === 'admin', isStudent: user?.role === 'student' }}>
+    <AuthContext.Provider value={{ user, loading, adminLogin, studentLogin, teacherLogin, logout, isAdmin: user?.role === 'admin', isStudent: user?.role === 'student', isTeacher: user?.role === 'teacher' }}>
       {children}
     </AuthContext.Provider>
   );

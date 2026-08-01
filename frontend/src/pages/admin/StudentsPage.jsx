@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Edit2, Trash2, Eye, X, Camera } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Camera } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
 import { format } from 'date-fns';
 
-const EMPTY = { name: '', phone: '', email: '', username: '', password: '', course: '', fatherName: '', address: '', gender: '', dob: '', status: 'Active', photo: '' };
+const todayStr = () => new Date().toISOString().split('T')[0];
+const EMPTY = { name: '', phone: '', email: '', username: '', password: '', course: '', fatherName: '', address: '', gender: '', dob: '', status: 'Active', photo: '', admissionDate: todayStr() };
 
 // Shrink & compress a selected photo client-side before storing it (keeps documents small and uploads fast)
 const resizeImageToBase64 = (file, maxDim = 400) => new Promise((resolve, reject) => {
@@ -45,7 +46,14 @@ export default function StudentsPage() {
   useEffect(() => { api.get('/courses?active=true').then(r => setCourses(r.data.data || [])); }, []);
 
   const openAdd = () => { setEditing(null); setForm(EMPTY); setModal(true); };
-  const openEdit = (s) => { setEditing(s._id); setForm({ ...s, course: s.course?._id || '', password: '', photo: s.photo || '' }); setModal(true); };
+  const openEdit = (s) => {
+    setEditing(s._id);
+    setForm({
+      ...s, course: s.course?._id || '', password: '', photo: s.photo || '',
+      admissionDate: s.admissionDate ? s.admissionDate.split('T')[0] : todayStr(),
+    });
+    setModal(true);
+  };
 
   const handlePhotoChange = async (e) => {
     const file = e.target.files?.[0];
@@ -109,7 +117,7 @@ export default function StudentsPage() {
         <div className="overflow-x-auto">
           <table className="data-table">
             <thead>
-              <tr><th>Student</th><th>ID</th><th>Course</th><th>Phone</th><th>Status</th><th>Joined</th><th>Actions</th></tr>
+              <tr><th>Student</th><th>ID</th><th>Course</th><th>Phone</th><th>Status</th><th>Admission Date</th><th>Actions</th></tr>
             </thead>
             <tbody>
               {loading ? [...Array(5)].map((_, i) => (
@@ -130,7 +138,7 @@ export default function StudentsPage() {
                   <td>{s.course?.name || <span className="text-gray-300">—</span>}</td>
                   <td>{s.phone}</td>
                   <td><span className={`badge text-xs ${s.status === 'Active' ? 'badge-green' : s.status === 'Completed' ? 'badge-blue' : 'badge-red'}`}>{s.status}</span></td>
-                  <td className="text-xs text-gray-400">{format(new Date(s.createdAt), 'dd MMM yy')}</td>
+                  <td className="text-xs text-gray-400">{format(new Date(s.admissionDate || s.createdAt), 'dd MMM yyyy')}</td>
                   <td>
                     <div className="flex items-center gap-1.5">
                       <button onClick={() => openEdit(s)} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"><Edit2 size={14} /></button>
@@ -188,6 +196,10 @@ export default function StudentsPage() {
                     <option value="">Select</option>
                     <option>Male</option><option>Female</option><option>Other</option>
                   </select>
+                </div>
+                <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Admission Date *</label>
+                  <input required type="date" className="input-field" value={form.admissionDate} onChange={e => setForm({ ...form, admissionDate: e.target.value })} />
+                  <p className="text-xs text-gray-400 mt-1">Set the actual date the student was admitted (can be backdated)</p>
                 </div>
                 <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Username *</label><input required={!editing} className="input-field" placeholder="login username" value={form.username} onChange={e => setForm({ ...form, username: e.target.value })} /></div>
                 <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{editing ? 'New Password (leave blank)' : 'Password *'}</label><input type="password" required={!editing} className="input-field" placeholder={editing ? 'Leave blank to keep' : 'Set password'} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>

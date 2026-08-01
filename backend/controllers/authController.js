@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
 const Student = require('../models/Student');
+const Teacher = require('../models/Teacher');
 
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || '7d' });
@@ -66,4 +67,40 @@ const studentLogin = async (req, res) => {
   }
 };
 
-module.exports = { adminLogin, studentLogin };
+// @desc  Teacher Login
+// @route POST /api/teacher/login
+const teacherLogin = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ success: false, message: 'Username and password required' });
+    }
+
+    const teacher = await Teacher.findOne({ username }).populate('course');
+    if (!teacher || !(await teacher.matchPassword(password))) {
+      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    if (teacher.status === 'Inactive') {
+      return res.status(403).json({ success: false, message: 'Account deactivated. Contact admin.' });
+    }
+
+    res.json({
+      success: true,
+      token: generateToken(teacher._id, 'teacher'),
+      user: {
+        id: teacher._id,
+        name: teacher.name,
+        username: teacher.username,
+        subject: teacher.subject,
+        course: teacher.course,
+        photo: teacher.photo,
+        role: 'teacher',
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+module.exports = { adminLogin, studentLogin, teacherLogin };

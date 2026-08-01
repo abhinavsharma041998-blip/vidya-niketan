@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, BookOpen, MessageSquare, CalendarCheck,
   CreditCard, Bell, Menu, X, LogOut, Sun, Moon, ChevronRight,
-  ClipboardList, BookOpenCheck, Award
+  ClipboardList, BookOpenCheck, UserCog, FolderOpen
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -11,6 +11,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 const navItems = [
   { to: '/admin', icon: <LayoutDashboard size={18} />, label: 'Dashboard', end: true },
   { to: '/admin/students', icon: <Users size={18} />, label: 'Students' },
+  { to: '/admin/teachers', icon: <UserCog size={18} />, label: 'Teachers' },
   { to: '/admin/courses', icon: <BookOpen size={18} />, label: 'Courses' },
   { to: '/admin/queries', icon: <MessageSquare size={18} />, label: 'Queries' },
   { to: '/admin/attendance', icon: <CalendarCheck size={18} />, label: 'Attendance' },
@@ -18,7 +19,7 @@ const navItems = [
   { to: '/admin/announcements', icon: <Bell size={18} />, label: 'Announcements' },
   { to: '/admin/exams', icon: <ClipboardList size={18} />, label: 'Exams' },
   { to: '/admin/exam-subjects', icon: <BookOpenCheck size={18} />, label: 'Question Bank' },
-  { to: '/admin/manual-results', icon: <Award size={18} />, label: 'Manual Results' },
+  { to: '/admin/materials', icon: <FolderOpen size={18} />, label: 'Study Materials' },
 ];
 
 export default function AdminLayout() {
