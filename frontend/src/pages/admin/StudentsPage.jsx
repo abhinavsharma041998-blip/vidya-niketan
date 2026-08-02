@@ -5,7 +5,7 @@ import api from '../../utils/api';
 import { format } from 'date-fns';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
-const EMPTY = { name: '', phone: '', email: '', username: '', password: '', course: '', fatherName: '', address: '', gender: '', dob: '', status: 'Active', photo: '', admissionDate: todayStr() };
+const EMPTY = { name: '', phone: '', email: '', username: '', password: '', course: '', fatherName: '', address: '', gender: '', dob: '', status: 'Active', photo: '', admissionDate: todayStr(), studentId: '' };
 
 // Shrink & compress a selected photo client-side before storing it (keeps documents small and uploads fast)
 const resizeImageToBase64 = (file, maxDim = 400) => new Promise((resolve, reject) => {
@@ -181,6 +181,10 @@ export default function StudentsPage() {
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Student ID {!editing && '*'}</label>
+                  <input required={!editing} disabled={!!editing} className="input-field disabled:opacity-60 disabled:cursor-not-allowed font-mono" placeholder="e.g. VN0026" value={form.studentId} onChange={e => setForm({ ...form, studentId: e.target.value.toUpperCase() })} />
+                  <p className="text-xs text-gray-400 mt-1">{editing ? "Can't be changed after creation" : 'Set this yourself — reuse an ID freed up by a deleted student if you want'}</p>
+                </div>
                 <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Full Name *</label><input required className="input-field" placeholder="Student name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
                 <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Phone *</label><input required className="input-field" placeholder="+91 XXXXX XXXXX" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></div>
                 <div><label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Email</label><input type="email" className="input-field" placeholder="email@example.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>

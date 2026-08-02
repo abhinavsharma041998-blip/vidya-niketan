@@ -27,11 +27,20 @@ const studentSchema = new mongoose.Schema({
   notificationsEnabled: { type: Boolean, default: true },
 }, { timestamps: true });
 
-// Auto-generate student ID
+// Only auto-generate if the admin left it blank — and do it in a collision-safe way
+// (using countDocuments() alone breaks once students are deleted, since the count
+// shrinks and a "new" number can collide with an ID that's still in use).
 studentSchema.pre('save', async function (next) {
   if (!this.studentId) {
-    const count = await mongoose.model('Student').countDocuments();
-    this.studentId = `VN${String(count + 1).padStart(4, '0')}`;
+    const Student = mongoose.model('Student');
+    let candidate, exists = true;
+    let n = await Student.countDocuments();
+    while (exists) {
+      n += 1;
+      candidate = `VN${String(n).padStart(4, '0')}`;
+      exists = await Student.exists({ studentId: candidate });
+    }
+    this.studentId = candidate;
   }
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, 12);
