@@ -17,6 +17,10 @@ const materialSchema = new mongoose.Schema({
   uploadedByRole: { type: String, enum: ['Admin', 'Teacher'], required: true },
   uploadedByName: { type: String, required: true },
   uploadedByTeacher: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher' }, // set only if a teacher uploaded it
+
+  // When the same file is uploaded to multiple courses at once, all the resulting
+  // Material docs share this id — useful for showing/managing them as one group later.
+  batchId: { type: String },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Material', materialSchema);

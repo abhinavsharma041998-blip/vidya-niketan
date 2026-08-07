@@ -1,21 +1,38 @@
 const Material = require('../models/Material');
 const { uploadBufferToCloudinary, cloudinary } = require('../config/cloudinary');
+const crypto = require('crypto');
 
 const getExt = (filename = '') => (filename.split('.').pop() || '').toLowerCase();
 
-// @desc  Upload a material (Admin or Teacher — see protectStaff)
+// @desc  Upload a material to one or more courses at once (Admin or Teacher — see protectStaff).
+//        The file is uploaded to Cloudinary only ONCE and reused across every selected course,
+//        so uploading the same syllabus to 20 courses doesn't cost 20x the storage or time.
 // @route POST /api/materials
 const uploadMaterial = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
-    const { title, description, category, course } = req.body;
-    if (!title || !category || !course) {
-      return res.status(400).json({ success: false, message: 'Title, category, and course are required' });
+    const { title, description, category } = req.body;
+
+    // courses arrives as a JSON-stringified array from the frontend (multipart/form-data
+    // can't carry real arrays), but also accept a single plain course id for old clients.
+    let courseIds = [];
+    try {
+      const parsed = JSON.parse(req.body.courses || '[]');
+      if (Array.isArray(parsed)) courseIds = parsed;
+    } catch {
+      // not JSON — fall through
+    }
+    if (courseIds.length === 0 && req.body.course) courseIds = [req.body.course];
+
+    if (!title || !category || courseIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'Title, category, and at least one course are required' });
     }
 
     // A course-restricted teacher can only upload to their own course
-    if (req.staff.role === 'Teacher' && req.staff.teacherDoc.course && String(req.staff.teacherDoc.course._id) !== String(course)) {
-      return res.status(403).json({ success: false, message: 'You can only upload materials for your assigned course' });
+    if (req.staff.role === 'Teacher' && req.staff.teacherDoc.course) {
+      const own = String(req.staff.teacherDoc.course._id);
+      const outsideOwn = courseIds.some(c => String(c) !== own);
+      if (outsideOwn) return res.status(403).json({ success: false, message: 'You can only upload materials for your assigned course' });
     }
 
     const result = await uploadBufferToCloudinary(req.file.buffer, {
@@ -23,8 +40,9 @@ const uploadMaterial = async (req, res) => {
       filename: req.file.originalname,
     });
 
-    const material = await Material.create({
-      title, description, category, course,
+    const batchId = crypto.randomUUID();
+    const baseDoc = {
+      title, description, category,
       fileUrl: result.secure_url,
       filePublicId: result.public_id,
       fileName: req.file.originalname,
@@ -33,10 +51,17 @@ const uploadMaterial = async (req, res) => {
       uploadedByRole: req.staff.role,
       uploadedByName: req.staff.name,
       uploadedByTeacher: req.staff.role === 'Teacher' ? req.staff.id : undefined,
-    });
+      batchId,
+    };
 
-    const populated = await Material.findById(material._id).populate('course', 'name');
-    res.status(201).json({ success: true, data: populated, message: 'Material uploaded' });
+    const created = await Material.insertMany(courseIds.map(course => ({ ...baseDoc, course })));
+    const populated = await Material.find({ batchId }).populate('course', 'name');
+
+    res.status(201).json({
+      success: true,
+      data: populated,
+      message: courseIds.length > 1 ? `Uploaded to ${courseIds.length} courses` : 'Material uploaded',
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -1,7 +1,7 @@
 // StudentResultsPage.jsx — a dedicated, clear view of every published result a student has:
 // both auto-graded online exam results and admin-entered manual (offline/paper) results.
 import { useState, useEffect } from 'react';
-import { Award, CheckCircle2, XCircle, MinusCircle, TrendingUp } from 'lucide-react';
+import { Award, CheckCircle2, XCircle, MinusCircle, TrendingUp, FileDown, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
 
@@ -17,6 +17,7 @@ export default function StudentResultsPage() {
   const [online, setOnline] = useState([]);
   const [manual, setManual] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
 
   const [debugInfo, setDebugInfo] = useState('');
 
@@ -34,6 +35,25 @@ export default function StudentResultsPage() {
     }).finally(() => setLoading(false));
   }, []);
 
+  const downloadReport = async () => {
+    setDownloading(true);
+    try {
+      const res = await api.get('/results/my-report', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'result-report.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Could not generate the report — please try again');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   // One unified, newest-first list — each item keeps enough of its original shape to render its own detail card
   const allResults = [
     ...online.map(r => ({ ...r, _kind: 'online', _date: r.submittedAt })),
@@ -46,10 +66,18 @@ export default function StudentResultsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2"><Award size={24} className="text-blue-600" /> My Results</h1>
-        <p className="text-gray-500 text-sm mt-1">Every result your school has published for you — online exams and offline/paper exams.</p>
-        {debugInfo && <p className="text-xs font-mono mt-2 px-2 py-1 rounded bg-yellow-50 text-yellow-800 border border-yellow-200 inline-block">DEBUG: {debugInfo}</p>}
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2"><Award size={24} className="text-blue-600" /> My Results</h1>
+          <p className="text-gray-500 text-sm mt-1">Every result your school has published for you — online exams and offline/paper exams.</p>
+          {debugInfo && <p className="text-xs font-mono mt-2 px-2 py-1 rounded bg-yellow-50 text-yellow-800 border border-yellow-200 inline-block">DEBUG: {debugInfo}</p>}
+        </div>
+        {allResults.length > 0 && (
+          <button onClick={downloadReport} disabled={downloading} className="btn-primary flex items-center gap-2 text-sm whitespace-nowrap">
+            {downloading ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
+            {downloading ? 'Generating…' : 'Download Result Report (PDF)'}
+          </button>
+        )}
       </div>
 
       {allResults.length === 0 ? (

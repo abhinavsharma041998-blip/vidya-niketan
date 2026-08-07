@@ -20,6 +20,7 @@ const {
 const { getTeachers, createTeacher, updateTeacher, deleteTeacher, getMyTeacherProfile } = require('../controllers/teacherController');
 const { uploadMaterial, getAllMaterials, getMyMaterials, getStudentMaterials, deleteMaterial } = require('../controllers/materialController');
 const upload = require('../middleware/upload');
+const { generateResultReport } = require('../controllers/reportController');
 const { protectAdmin, protectStudent, protectTeacher, protectStaff } = require('../middleware/auth');
 
 // Wraps multer so its errors (file too large, wrong type) come back as clean JSON
@@ -120,5 +121,9 @@ router.delete('/materials/:id', protectStaff, deleteMaterial);
 router.get('/materials/admin', protectAdmin, getAllMaterials);
 router.get('/materials/mine', protectTeacher, getMyMaterials);
 router.get('/materials/student', protectStudent, getStudentMaterials);
+
+// ─── Combined Result Report (PDF) ────────────────────────────────────────────
+router.get('/results/my-report', protectStudent, generateResultReport);
+router.get('/results/:studentId/report', protectAdmin, generateResultReport);
 
 module.exports = router;

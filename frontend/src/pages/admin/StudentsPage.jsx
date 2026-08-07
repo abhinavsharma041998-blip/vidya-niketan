@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Edit2, Trash2, X, Camera } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, X, Camera, FileDown, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../../utils/api';
 import { format } from 'date-fns';
@@ -36,6 +36,7 @@ export default function StudentsPage() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
+  const [downloadingId, setDownloadingId] = useState(null);
 
   const fetchStudents = useCallback(() => {
     setLoading(true);
@@ -92,6 +93,25 @@ export default function StudentsPage() {
     catch { toast.error('Failed to delete'); }
   };
 
+  const downloadReport = async (id, name) => {
+    setDownloadingId(id);
+    try {
+      const res = await api.get(`/results/${id}/report`, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${name.replace(/\s+/g, '_')}-result-report.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Could not generate the report');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -141,6 +161,9 @@ export default function StudentsPage() {
                   <td className="text-xs text-gray-400">{format(new Date(s.admissionDate || s.createdAt), 'dd MMM yyyy')}</td>
                   <td>
                     <div className="flex items-center gap-1.5">
+                      <button onClick={() => downloadReport(s._id, s.name)} disabled={downloadingId === s._id} className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors" title="Download Result Report">
+                        {downloadingId === s._id ? <Loader2 size={14} className="animate-spin" /> : <FileDown size={14} />}
+                      </button>
                       <button onClick={() => openEdit(s)} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"><Edit2 size={14} /></button>
                       <button onClick={() => handleDelete(s._id, s.name)} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"><Trash2 size={14} /></button>
                     </div>
