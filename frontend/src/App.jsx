@@ -24,6 +24,7 @@ import QueriesPage from './pages/admin/QueriesPage';
 import AttendancePage from './pages/admin/AttendancePage';
 import FeesPage from './pages/admin/FeesPage';
 import AnnouncementsPage from './pages/admin/AnnouncementsPage';
+import ManualResultsPage from './pages/admin/ManualResultsPage';
 import ExamsPage from './pages/admin/ExamsPage';
 import ExamSubjectsPage from './pages/admin/ExamSubjectsPage';
 import TeachersPage from './pages/admin/TeachersPage';
@@ -37,6 +38,7 @@ import StudentFeesPage from './pages/student/StudentFeesPage';
 import StudentExamsPage from './pages/student/StudentExamsPage';
 import TakeExamPage from './pages/student/TakeExamPage';
 import StudentMaterialsPage from './pages/student/StudentMaterialsPage';
+import StudentResultsPage from './pages/student/StudentResultsPage';
 
 // Teacher pages
 import TeacherLayout from './components/teacher/TeacherLayout';
@@ -93,6 +95,7 @@ export default function App() {
               <Route path="attendance" element={<AttendancePage />} />
               <Route path="fees" element={<FeesPage />} />
               <Route path="announcements" element={<AnnouncementsPage />} />
+              <Route path="manual-results" element={<ManualResultsPage />} />
               <Route path="exams" element={<ExamsPage />} />
               <Route path="exam-subjects" element={<ExamSubjectsPage />} />
               <Route path="teachers" element={<TeachersPage />} />
@@ -106,6 +109,7 @@ export default function App() {
               <Route path="fees" element={<StudentFeesPage />} />
               <Route path="exams" element={<StudentExamsPage />} />
               <Route path="materials" element={<StudentMaterialsPage />} />
+              <Route path="results" element={<StudentResultsPage />} />
             </Route>
 
             {/* Full-screen exam-taking view (outside the sidebar layout, own route) */}
