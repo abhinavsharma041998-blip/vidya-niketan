@@ -21,6 +21,10 @@ const { getTeachers, createTeacher, updateTeacher, deleteTeacher, getMyTeacherPr
 const { uploadMaterial, getAllMaterials, getMyMaterials, getStudentMaterials, deleteMaterial } = require('../controllers/materialController');
 const upload = require('../middleware/upload');
 const { generateResultReport } = require('../controllers/reportController');
+const {
+  getManualResults, createManualResult, updateManualResult, setManualResultPublished, deleteManualResult,
+  getMyManualResults,
+} = require('../controllers/manualResultController');
 const { protectAdmin, protectStudent, protectTeacher, protectStaff } = require('../middleware/auth');
 
 // Wraps multer so its errors (file too large, wrong type) come back as clean JSON
@@ -125,5 +129,13 @@ router.get('/materials/student', protectStudent, getStudentMaterials);
 // ─── Combined Result Report (PDF) ────────────────────────────────────────────
 router.get('/results/my-report', protectStudent, generateResultReport);
 router.get('/results/:studentId/report', protectAdmin, generateResultReport);
+
+// ─── Manual (Offline/Paper) Results ─────────────────────────────────────────────
+router.get('/admin/manual-results', protectAdmin, getManualResults);
+router.post('/admin/manual-results', protectAdmin, createManualResult);
+router.put('/admin/manual-results/:id', protectAdmin, updateManualResult);
+router.put('/admin/manual-results/:id/publish', protectAdmin, setManualResultPublished);
+router.delete('/admin/manual-results/:id', protectAdmin, deleteManualResult);
+router.get('/student/manual-results', protectStudent, getMyManualResults);
 
 module.exports = router;
