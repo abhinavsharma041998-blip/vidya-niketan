@@ -32,9 +32,11 @@ examSchema.pre('validate', function (next) {
   next();
 });
 
-// Virtual: total questions across all subjects (auto-calculated, always in sync)
+// Virtual: total questions across all subjects (auto-calculated, always in sync).
+// Guarded with `|| []` because a partial .populate('exam', 'title ...') or .select(...)
+// that omits `subjects` would otherwise leave it undefined here and crash on serialization.
 examSchema.virtual('totalQuestions').get(function () {
-  return this.subjects.reduce((sum, s) => sum + s.numberOfQuestions, 0);
+  return (this.subjects || []).reduce((sum, s) => sum + s.numberOfQuestions, 0);
 });
 
 examSchema.virtual('totalMarks').get(function () {
