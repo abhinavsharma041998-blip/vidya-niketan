@@ -38,41 +38,81 @@ const base64ToBuffer = (dataUri) => {
   catch { return null; }
 };
 
+// ── Brand palette (matches the institute's admission form design) ───────────
 const NAVY = '#1e3a8a';
-const BORDER = '#94a3b8';
-const TEXT = '#111827';
+const NAVY_DARK = '#1e2a5e';
+const PINK = '#db2777';
+const TEAL = '#0891b2';
+const TEXT = '#1f2937';
 const MUTED = '#6b7280';
 
-// Draws just the bordered label part of a cell (no placeholder value) — the value gets
-// written separately into the adjoining cell right after this call.
-function labelOnlyCell(doc, x, y, w, h, label) {
-  doc.rect(x, y, w, h).stroke(BORDER);
-  doc.font('Helvetica-Bold').fontSize(7).fillColor(MUTED).text(label.toUpperCase(), x + 5, y + 4, { width: w - 10 });
+// A numbered, colored section header bar — e.g. "① STUDENT INFORMATION"
+function sectionHeader(doc, y, num, title, color, contentW, margin) {
+  const h = 24;
+  doc.roundedRect(margin, y, contentW, h, 4).fill(color);
+  doc.circle(margin + 16, y + h / 2, 9).fill('#ffffff');
+  doc.font('Helvetica-Bold').fontSize(9).fillColor(color).text(String(num), margin + 16 - 3, y + h / 2 - 4);
+  doc.font('Helvetica-Bold').fontSize(10).fillColor('#ffffff').text(title, margin + 34, y + h / 2 - 5);
+  return y + h;
 }
 
-// Draws one row of a fully-gridded table (every cell bordered), optionally with a filled header background.
-function tableRow(doc, x, y, rowHeight, columns, cells, opts = {}) {
-  let cx = x;
-  columns.forEach((col, i) => {
-    if (opts.headerFill) doc.rect(cx, y, col.width, rowHeight).fillAndStroke(opts.headerFill, BORDER);
-    else if (opts.fill) doc.rect(cx, y, col.width, rowHeight).fillAndStroke(opts.fill, BORDER);
-    else doc.rect(cx, y, col.width, rowHeight).stroke(BORDER);
-    doc.font(opts.bold ? 'Helvetica-Bold' : 'Helvetica').fontSize(opts.fontSize || 8.5).fillColor(opts.textColor || TEXT)
-      .text(String(cells[i] ?? ''), cx + 5, y + rowHeight / 2 - 4, { width: col.width - 10, align: col.align || 'left' });
-    cx += col.width;
+// One exam/test's mini results table: a light title bar, a subject grid, and a total row.
+function testBlock(doc, y, title, meta, subjects, total, contentW, margin) {
+  const rowH = 19, barH = 20;
+  doc.roundedRect(margin, y, contentW, barH, 3).fill('#eef2ff');
+  doc.font('Helvetica-Bold').fontSize(9).fillColor(NAVY).text(title, margin + 10, y + 6, { width: contentW - 180 });
+  doc.font('Helvetica').fontSize(7.5).fillColor(MUTED).text(meta, margin + contentW - 170, y + 6.5, { width: 160, align: 'right' });
+
+  let ty = y + barH + 2;
+  const cols = [
+    { label: 'Subject', w: contentW * 0.52, align: 'left' },
+    { label: 'Obtained', w: contentW * 0.16, align: 'center' },
+    { label: 'Max', w: contentW * 0.16, align: 'center' },
+    { label: '%', w: contentW * 0.16, align: 'center' },
+  ];
+  let cx = margin;
+  cols.forEach(c => {
+    doc.font('Helvetica-Bold').fontSize(7.5).fillColor(MUTED).text(c.label.toUpperCase(), cx + 2, ty, { width: c.w - 4, align: c.align });
+    cx += c.w;
   });
+  ty += 13;
+  doc.moveTo(margin, ty).lineTo(margin + contentW, ty).lineWidth(0.5).strokeColor('#e2e8f0').stroke();
+  ty += 4;
+
+  const rowsToRender = subjects.length > 0 ? subjects : [{ name: 'No subject breakdown available', obtained: null, max: null }];
+  rowsToRender.forEach((s, i) => {
+    if (i % 2 === 1) doc.rect(margin, ty - 2, contentW, rowH).fill('#f8fafc');
+    const pct = s.max ? Math.round((s.obtained / s.max) * 1000) / 10 + '%' : '—';
+    const rowVals = [s.name, s.obtained ?? '—', s.max ?? '—', pct];
+    let cx2 = margin;
+    cols.forEach((c, ci) => {
+      doc.font('Helvetica').fontSize(8.5).fillColor(TEXT).text(String(rowVals[ci]), cx2 + 2, ty + 2, { width: c.w - 4, align: c.align });
+      cx2 += c.w;
+    });
+    ty += rowH;
+  });
+
+  doc.moveTo(margin, ty).lineTo(margin + contentW, ty).lineWidth(0.5).strokeColor('#e2e8f0').stroke();
+  ty += 4;
+  const totRow = ['Total', total.obtained, total.max, `${total.pct}%`];
+  let cx3 = margin;
+  cols.forEach((c, ci) => {
+    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(NAVY).text(String(totRow[ci]), cx3 + 2, ty, { width: c.w - 4, align: c.align });
+    cx3 += c.w;
+  });
+  return ty + 22;
 }
 
-// Ensures there's room for `neededHeight` more content before the bottom margin; starts a new page if not.
-function ensureSpace(doc, neededHeight) {
-  if (doc.y + neededHeight > doc.page.height - doc.page.margins.bottom) {
+function ensureSpace(doc, y, neededHeight, margin) {
+  if (y + neededHeight > doc.page.height - 40) {
     doc.addPage();
+    return margin;
   }
+  return y;
 }
 
-// @desc  Generate a combined result report PDF — subject-wise marks for every exam/test the
-//        student has, both online (auto-graded) and offline/manual (admin-entered) — laid out
-//        like an official university exam form: bordered info grid, gridded tables, signatures.
+// @desc  Generate a combined, subject-wise result report PDF — styled to match the institute's
+//        own admission-form branding (gradient header, numbered colored sections, card layout).
 // @route GET /api/results/:studentId/report   (Admin)
 // @route GET /api/results/my-report            (Student, studentId comes from their own token)
 const generateResultReport = async (req, res) => {
@@ -89,11 +129,9 @@ const generateResultReport = async (req, res) => {
       ManualResult.find({ student: studentId, published: true }).sort({ createdAt: 1 }),
     ]);
 
-    // Build one unified list of "tests", each carrying its own subject-wise marks —
-    // this is what makes every subject show up individually instead of one lump total.
     const tests = [
       ...examResults.map(r => {
-        const bySubject = new Map(); // subjectName -> { obtained, max }
+        const bySubject = new Map();
         const marksPerQ = r.exam?.marksPerQuestion || 1;
         r.answers.forEach(a => {
           const subjName = a.question?.subject?.name || 'General';
@@ -103,22 +141,14 @@ const generateResultReport = async (req, res) => {
           if (a.isCorrect) entry.obtained += marksPerQ;
         });
         return {
-          title: r.exam?.title || 'Online Exam',
-          type: 'Online',
-          date: r.createdAt,
-          totalObtained: r.score,
-          totalMax: r.totalMarks,
-          percentage: r.percentage,
+          title: r.exam?.title || 'Online Exam', type: 'Online', date: r.createdAt,
+          totalObtained: r.score, totalMax: r.totalMarks, percentage: r.percentage,
           subjects: Array.from(bySubject.entries()).map(([name, v]) => ({ name, ...v })),
         };
       }),
       ...manualResults.map(r => ({
-        title: r.title,
-        type: 'Offline',
-        date: r.publishedAt || r.createdAt,
-        totalObtained: r.totalObtained,
-        totalMax: r.totalMax,
-        percentage: r.percentage,
+        title: r.title, type: 'Offline', date: r.publishedAt || r.createdAt,
+        totalObtained: r.totalObtained, totalMax: r.totalMax, percentage: r.percentage,
         subjects: r.subjects.map(s => ({ name: s.subjectName, obtained: s.marksObtained, max: s.maxMarks })),
       })),
     ].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -127,157 +157,160 @@ const generateResultReport = async (req, res) => {
     const totalMax = tests.reduce((s, t) => s + (t.totalMax || 0), 0);
     const overallPct = totalMax > 0 ? Math.round((totalObtained / totalMax) * 10000) / 100 : 0;
     const overallGrade = getGrade(overallPct);
-    const overallResult = overallPct >= PASS_MARK ? 'PASS' : 'FAIL';
+    const isPass = overallPct >= PASS_MARK;
 
-    // ── Build the PDF ──────────────────────────────────────────────────────────
-    const doc = new PDFDocument({ size: 'A4', margin: 40 });
+    // ── Build the PDF ──────────────────────────────────────────────────────
+    const doc = new PDFDocument({ size: 'A4', margin: 0 });
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${student.studentId}-result-report.pdf"`);
     doc.pipe(res);
 
-    const pageWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
-    const left = doc.page.margins.left;
+    const pageW = doc.page.width;
+    const margin = 36;
+    const contentW = pageW - margin * 2;
 
-    // ── Header: logo + institute name, centered banner style ──────────────────
+    // Header banner (gradient navy)
+    const headerH = 92;
+    const grad = doc.linearGradient(0, 0, pageW, headerH);
+    grad.stop(0, NAVY_DARK).stop(1, NAVY);
+    doc.rect(0, 0, pageW, headerH).fill(grad);
+
     const logo = await getLogoBuffer();
-    const headerTop = doc.y;
     if (logo) {
-      try { doc.image(logo, left, headerTop, { width: 46, height: 46, fit: [46, 46] }); } catch { /* skip */ }
+      try {
+        doc.save();
+        doc.circle(58, 46, 26).clip();
+        doc.image(logo, 32, 20, { width: 52, height: 52, fit: [52, 52] });
+        doc.restore();
+        doc.circle(58, 46, 26).lineWidth(1.5).stroke('#ffffff');
+      } catch {
+        doc.circle(58, 46, 26).lineWidth(2).stroke('#ffffff');
+      }
+    } else {
+      doc.circle(58, 46, 26).lineWidth(2).stroke('#ffffff');
     }
-    doc.font('Helvetica-Bold').fontSize(17).fillColor(NAVY)
-      .text('VIDYA NIKETAN EDUCATION CENTRE', left, headerTop + 2, { width: pageWidth, align: 'center' });
-    doc.font('Helvetica').fontSize(8.5).fillColor(MUTED)
-      .text('Consolidated Academic Result Report', left, headerTop + 24, { width: pageWidth, align: 'center' });
-    doc.moveDown(2.2);
-    doc.lineWidth(2).strokeColor(NAVY).moveTo(left, doc.y).lineTo(left + pageWidth, doc.y).stroke();
-    doc.moveDown(0.8);
 
-    // ── Student info grid (bordered, form-style) with photo box on the right ──
-    const photoW = 85, photoH = 96;
-    const gridX = left, gridW = pageWidth - photoW - 10;
-    const labelColW = 78, valueColW = (gridW - labelColW * 2) / 2;
-    const rowH = 24;
-    const gridTop = doc.y;
+    doc.font('Helvetica-Bold').fontSize(15).fillColor('#ffffff').text('Vidya Niketan', 96, 24);
+    doc.font('Helvetica-Bold').fontSize(15).fillColor('#ffffff').text('Education Centre', 96, 41);
+    doc.font('Helvetica').fontSize(8).fillColor('#93c5fd').text('CHINTPURNI, HIMACHAL PRADESH', 96, 60);
 
-    const infoRows = [
-      ['Student ID', student.studentId, 'Course', student.course?.name || '—'],
-      ["Father's Name", student.fatherName || '—', 'Gender', student.gender || '—'],
-      ['Admission Date', student.admissionDate ? new Date(student.admissionDate).toLocaleDateString('en-IN') : '—', 'Status', student.status || 'Active'],
-      ['Phone', student.phone || '—', 'Report Date', new Date().toLocaleDateString('en-IN')],
-    ];
+    doc.font('Helvetica-Bold').fontSize(26);
+    const w1 = doc.widthOfString('RESULT ');
+    const w2 = doc.widthOfString('Report');
+    const titleRightEdge = pageW - margin;
+    doc.fillColor('#ffffff').text('RESULT ', titleRightEdge - w1 - w2, 26);
+    doc.fillColor('#5eead4').text('Report', titleRightEdge - w2, 26);
+    doc.font('Helvetica').fontSize(8).fillColor('#93c5fd').text('CONSOLIDATED ACADEMIC REPORT', pageW - margin - 220, 60, { width: 220, align: 'right' });
 
-    doc.rect(gridX, gridTop, gridW, rowH).stroke(BORDER);
-    doc.font('Helvetica-Bold').fontSize(7).fillColor(MUTED).text('CANDIDATE NAME', gridX + 5, gridTop + 4);
-    doc.font('Helvetica-Bold').fontSize(11).fillColor(TEXT).text(student.name, gridX + 5, gridTop + 14);
-
-    let y = gridTop + rowH;
-    infoRows.forEach(([l1, v1, l2, v2]) => {
-      labelOnlyCell(doc, gridX, y, labelColW, rowH, l1);
-      doc.font('Helvetica').fontSize(9).fillColor(TEXT).text(v1 || '—', gridX + labelColW + 5, y + 8, { width: valueColW - 10 });
-      doc.rect(gridX + labelColW, y, valueColW, rowH).stroke(BORDER);
-
-      const l2x = gridX + labelColW + valueColW;
-      labelOnlyCell(doc, l2x, y, labelColW, rowH, l2);
-      doc.font('Helvetica').fontSize(9).fillColor(TEXT).text(v2 || '—', l2x + labelColW + 5, y + 8, { width: valueColW - 10 });
-      doc.rect(l2x + labelColW, y, valueColW, rowH).stroke(BORDER);
-      y += rowH;
+    [0, 1, 2, 3].forEach(i => {
+      doc.circle(margin + 4 + i * 10, headerH + 6, 2).fill(i === 0 ? PINK : '#cbd5e1');
     });
 
-    const photoX = gridX + gridW + 10;
-    doc.rect(photoX, gridTop, photoW, photoH).stroke(BORDER);
+    let y = headerH + 20;
+
+    // Student ID / Report Date boxes
+    doc.font('Helvetica-Bold').fontSize(7).fillColor(MUTED).text('STUDENT ID', margin, y);
+    doc.roundedRect(margin, y + 11, 130, 22, 3).stroke('#cbd5e1');
+    doc.font('Helvetica-Bold').fontSize(10).fillColor(TEXT).text(student.studentId, margin + 8, y + 17);
+
+    doc.font('Helvetica-Bold').fontSize(7).fillColor(MUTED).text('REPORT DATE', margin + 150, y);
+    doc.roundedRect(margin + 150, y + 11, 130, 22, 3).stroke('#cbd5e1');
+    doc.font('Helvetica-Bold').fontSize(10).fillColor(TEXT).text(new Date().toLocaleDateString('en-IN'), margin + 158, y + 17);
+
+    y += 48;
+
+    // Section 1: Student Information card
+    y = sectionHeader(doc, y, 1, 'STUDENT INFORMATION', NAVY, contentW, margin);
+    const cardTop = y;
+    const photoW = 80, photoH = 92;
+    const infoW = contentW - photoW - 16;
+    const cardH = 108;
+    doc.roundedRect(margin, cardTop, contentW, cardH, 4).fillAndStroke('#ffffff', '#e2e8f0');
+
     const photoBuf = base64ToBuffer(student.photo);
+    const photoX = margin + infoW + 16, photoY = cardTop + 10;
     if (photoBuf) {
-      try { doc.image(photoBuf, photoX + 4, gridTop + 4, { width: photoW - 8, height: photoH - 8, fit: [photoW - 8, photoH - 8] }); } catch { /* skip */ }
+      try { doc.image(photoBuf, photoX, photoY, { width: photoW, height: photoH, fit: [photoW, photoH] }); } catch { /* skip */ }
+      doc.roundedRect(photoX, photoY, photoW, photoH, 4).stroke('#e2e8f0');
     } else {
-      doc.font('Helvetica').fontSize(7).fillColor(MUTED).text('Photo', photoX, gridTop + photoH / 2 - 4, { width: photoW, align: 'center' });
+      doc.roundedRect(photoX, photoY, photoW, photoH, 4).dash(3, { space: 2 }).stroke(PINK);
+      doc.undash();
+      doc.font('Helvetica').fontSize(7).fillColor(PINK).text('Photo', photoX, photoY + photoH / 2, { width: photoW, align: 'center' });
     }
 
-    doc.y = y + 20;
-
-    // ── Subject-wise results, one block per exam/test ──────────────────────────
-    doc.font('Helvetica-Bold').fontSize(11).fillColor(TEXT).text('Subject-wise Examination Results', left, doc.y);
-    doc.moveDown(0.5);
-
-    const subCols = [
-      { label: 'S.No', width: 30, align: 'center' },
-      { label: 'Subject', width: 260, align: 'left' },
-      { label: 'Obtained', width: 75, align: 'center' },
-      { label: 'Max', width: 75, align: 'center' },
-      { label: '%', width: 45, align: 'center' },
+    const fields = [
+      ['FULL NAME', student.name, 'COURSE', student.course?.name || '—'],
+      ["FATHER'S NAME", student.fatherName || '—', 'GENDER', student.gender || '—'],
+      ['ADMISSION DATE', student.admissionDate ? new Date(student.admissionDate).toLocaleDateString('en-IN') : '—', 'STATUS', student.status || 'Active'],
+      ['PHONE', student.phone || '—', 'EMAIL', student.email || '—'],
     ];
+    let fy = cardTop + 14;
+    const colW = infoW / 2;
+    fields.forEach(([l1, v1, l2, v2]) => {
+      doc.font('Helvetica-Bold').fontSize(7).fillColor(MUTED).text(l1, margin + 14, fy);
+      doc.font('Helvetica').fontSize(9.5).fillColor(TEXT).text(v1, margin + 14, fy + 10, { width: colW - 20 });
+      doc.font('Helvetica-Bold').fontSize(7).fillColor(MUTED).text(l2, margin + 14 + colW, fy);
+      doc.font('Helvetica').fontSize(9.5).fillColor(TEXT).text(v2, margin + 14 + colW, fy + 10, { width: colW - 20 });
+      fy += 24;
+    });
+
+    y = cardTop + cardH + 18;
+
+    // Section 2: Subject-wise Results
+    y = sectionHeader(doc, y, 2, 'SUBJECT-WISE EXAMINATION RESULTS', TEAL, contentW, margin);
+    y += 10;
 
     if (tests.length === 0) {
-      doc.font('Helvetica').fontSize(10).fillColor(MUTED).text('No published results yet.', left, doc.y);
+      doc.font('Helvetica').fontSize(10).fillColor(MUTED).text('No published results yet.', margin, y);
+      y += 24;
     } else {
-      tests.forEach((test) => {
-        const blockHeight = 26 + 22 + (test.subjects.length || 1) * 20 + 22 + 14; // title + header + rows + total + gap
-        ensureSpace(doc, blockHeight);
-
-        // Test title bar
-        const titleY = doc.y;
-        doc.rect(left, titleY, pageWidth, 22).fillAndStroke('#eef2ff', NAVY);
-        doc.font('Helvetica-Bold').fontSize(9.5).fillColor(NAVY)
-          .text(`${test.title}`, left + 8, titleY + 6, { width: pageWidth - 220 });
-        doc.font('Helvetica').fontSize(8).fillColor(MUTED)
-          .text(`${test.type} · ${new Date(test.date).toLocaleDateString('en-IN')}`, left + pageWidth - 200, titleY + 7, { width: 195, align: 'right' });
-        let ty = titleY + 22;
-
-        // Subject header row
-        tableRow(doc, left, ty, 20, subCols, subCols.map(c => c.label), { bold: true, headerFill: NAVY, textColor: '#ffffff', fontSize: 8 });
-        ty += 20;
-
-        if (test.subjects.length === 0) {
-          tableRow(doc, left, ty, 20, subCols, ['—', 'No subject breakdown available', '—', '—', '—']);
-          ty += 20;
-        } else {
-          test.subjects.forEach((s, i) => {
-            if (ty + 20 > doc.page.height - doc.page.margins.bottom - 20) { doc.addPage(); ty = doc.page.margins.top; }
-            const pct = s.max > 0 ? Math.round((s.obtained / s.max) * 1000) / 10 : 0;
-            tableRow(doc, left, ty, 20, subCols, [i + 1, s.name, s.obtained, s.max, `${pct}%`]);
-            ty += 20;
-          });
-        }
-
-        // Test subtotal row
-        tableRow(doc, left, ty, 22, subCols,
-          ['', 'Total', test.totalObtained, test.totalMax, `${test.percentage}%`],
-          { bold: true, fill: '#f1f5f9' }
-        );
-        ty += 22;
-
-        doc.y = ty + 14;
+      tests.forEach(test => {
+        const blockHeight = 22 + 17 + (test.subjects.length || 1) * 19 + 22;
+        y = ensureSpace(doc, y, blockHeight, margin);
+        y = testBlock(doc, y, test.title, `${test.type} · ${new Date(test.date).toLocaleDateString('en-IN')}`, test.subjects,
+          { obtained: test.totalObtained, max: test.totalMax, pct: test.percentage }, contentW, margin);
       });
     }
 
-    // ── Overall summary box ─────────────────────────────────────────────────
-    ensureSpace(doc, 70);
-    const sumTop = doc.y;
-    const passColor = overallResult === 'PASS' ? '#059669' : '#dc2626';
-    const passFill = overallResult === 'PASS' ? '#ecfdf5' : '#fef2f2';
-    doc.rect(left, sumTop, pageWidth, 60).fillAndStroke(passFill, passColor);
-    doc.font('Helvetica-Bold').fontSize(9).fillColor(TEXT).text(
-      `Total Marks: ${totalObtained} / ${totalMax}    |    Exams/Tests Counted: ${tests.length}`,
-      left + 14, sumTop + 12, { width: pageWidth - 28 }
-    );
-    doc.font('Helvetica-Bold').fontSize(14).fillColor(passColor).text(
-      `Overall Percentage: ${overallPct}%   |   Grade: ${overallGrade}   |   Result: ${overallResult}`,
-      left + 14, sumTop + 32, { width: pageWidth - 28 }
-    );
-    doc.y = sumTop + 78;
+    // Section 3: Overall Summary
+    y = ensureSpace(doc, y, 100, margin);
+    y = sectionHeader(doc, y, 3, 'OVERALL SUMMARY', PINK, contentW, margin);
+    y += 12;
 
-    // ── Signature lines ────────────────────────────────────────────────────
-    ensureSpace(doc, 40);
-    const sigY = doc.y;
-    doc.font('Helvetica').fontSize(9).fillColor(TEXT);
-    doc.text('_____________________________', left, sigY);
-    doc.text('Class Teacher / Verified By', left, sigY + 12);
-    doc.text('_____________________________', left + pageWidth - 220, sigY);
-    doc.text('Principal Sign & Stamp', left + pageWidth - 220, sigY + 12);
+    const sumH = 56;
+    doc.roundedRect(margin, y, contentW, sumH, 4).fillAndStroke('#ffffff', '#e2e8f0');
+    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(MUTED).text('TOTAL MARKS', margin + 16, y + 12);
+    doc.font('Helvetica-Bold').fontSize(13).fillColor(TEXT).text(`${totalObtained} / ${totalMax}`, margin + 16, y + 24);
 
-    doc.font('Helvetica').fontSize(7.5).fillColor(MUTED).text(
-      `Generated on ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })} — This is a system-generated consolidated report from Vidya Niketan Education Centre.`,
-      left, doc.page.height - doc.page.margins.bottom - 12, { width: pageWidth, align: 'center' }
-    );
+    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(MUTED).text('PERCENTAGE', margin + 150, y + 12);
+    doc.font('Helvetica-Bold').fontSize(13).fillColor(TEXT).text(`${overallPct}%`, margin + 150, y + 24);
+
+    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(MUTED).text('GRADE', margin + 270, y + 12);
+    doc.font('Helvetica-Bold').fontSize(13).fillColor(TEXT).text(overallGrade, margin + 270, y + 24);
+
+    const pillColor = isPass ? '#059669' : '#dc2626';
+    const pillBg = isPass ? '#d1fae5' : '#fee2e2';
+    const pillW = 78, pillH = 22;
+    const pillX = margin + contentW - pillW - 16, pillY = y + (sumH - pillH) / 2;
+    doc.roundedRect(pillX, pillY, pillW, pillH, 11).fill(pillBg);
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(pillColor).text(isPass ? 'PASS' : 'FAIL', pillX, pillY + 6.5, { width: pillW, align: 'center' });
+
+    y += sumH + 30;
+
+    // Signature lines
+    y = ensureSpace(doc, y, 40, margin);
+    doc.font('Helvetica').fontSize(8.5).fillColor(TEXT);
+    doc.moveTo(margin, y).lineTo(margin + 150, y).strokeColor('#94a3b8').lineWidth(0.7).stroke();
+    doc.text('Class Teacher / Verified By', margin, y + 4);
+    doc.moveTo(margin + contentW - 150, y).lineTo(margin + contentW, y).stroke();
+    doc.text('Principal Sign & Stamp', margin + contentW - 150, y + 4);
+
+    // Footer bar
+    const footerH = 30;
+    const footerY = doc.page.height - footerH;
+    doc.rect(0, footerY, pageW, footerH).fill(NAVY_DARK);
+    doc.font('Helvetica-Bold').fontSize(8).fillColor('#ffffff').text('Vidya Niketan Education Centre · Chintpurni', margin, footerY + 11);
+    doc.font('Helvetica').fontSize(7).fillColor('#93c5fd').text(`VNEC/RES/${new Date().getFullYear()}`, pageW - margin - 100, footerY + 11, { width: 100, align: 'right' });
 
     doc.end();
   } catch (error) {
