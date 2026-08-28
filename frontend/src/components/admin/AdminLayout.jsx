@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, BookOpen, MessageSquare, CalendarCheck,
   CreditCard, Bell, Menu, X, LogOut, Sun, Moon, ChevronRight,
-  ClipboardList, BookOpenCheck, UserCog, FolderOpen, Award
+  ClipboardList, BookOpenCheck, UserCog, FolderOpen, Award, Wallet
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -16,6 +16,7 @@ const navItems = [
   { to: '/admin/queries', icon: <MessageSquare size={18} />, label: 'Queries' },
   { to: '/admin/attendance', icon: <CalendarCheck size={18} />, label: 'Attendance' },
   { to: '/admin/fees', icon: <CreditCard size={18} />, label: 'Fees' },
+  { to: '/admin/payments', icon: <Wallet size={18} />, label: 'Payments' },
   { to: '/admin/announcements', icon: <Bell size={18} />, label: 'Announcements' },
   { to: '/admin/manual-results', icon: <Award size={18} />, label: 'Manual Results' },
   { to: '/admin/exams', icon: <ClipboardList size={18} />, label: 'Exams' },

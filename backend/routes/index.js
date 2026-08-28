@@ -26,6 +26,8 @@ const {
   getMyManualResults,
 } = require('../controllers/manualResultController');
 const { protectAdmin, protectStudent, protectTeacher, protectStaff } = require('../middleware/auth');
+const { getPaymentSettings, updatePaymentSettings } = require('../controllers/paymentSettingsController');
+const { submitPayment, getMySubmissions, getAllSubmissions, reviewSubmission } = require('../controllers/paymentSubmissionController');
 
 // Wraps multer so its errors (file too large, wrong type) come back as clean JSON
 // instead of crashing into the generic 500 handler.
@@ -75,6 +77,17 @@ router.post('/fees', protectAdmin, addFees);
 router.get('/fees', protectAdmin, getFees);
 router.put('/fees/:id', protectAdmin, updateFees);
 router.get('/fees/me', protectStudent, getMyFees);
+
+// ─── Payment Settings (Admin-configurable UPI/QR/Bank details) ────────────────
+router.get('/payment-settings', protectStudent, getPaymentSettings); // student view (Make Payment page)
+router.get('/payment-settings/admin', protectAdmin, getPaymentSettings); // admin view (Settings tab)
+router.put('/payment-settings', protectAdmin, handleUpload, updatePaymentSettings);
+
+// ─── Payment Submissions (Student submits proof → Admin reviews) ──────────────
+router.post('/payment-submissions', protectStudent, handleUpload, submitPayment);
+router.get('/payment-submissions/me', protectStudent, getMySubmissions);
+router.get('/payment-submissions', protectAdmin, getAllSubmissions);
+router.put('/payment-submissions/:id/review', protectAdmin, reviewSubmission);
 
 // ─── Notifications ─────────────────────────────────────────────────────────────
 router.post('/notify/sms', protectAdmin, sendSMSHandler);

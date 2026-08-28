@@ -23,6 +23,7 @@ import AdminCoursesPage from './pages/admin/AdminCoursesPage';
 import QueriesPage from './pages/admin/QueriesPage';
 import AttendancePage from './pages/admin/AttendancePage';
 import FeesPage from './pages/admin/FeesPage';
+import PaymentsPage from './pages/admin/PaymentsPage';
 import AnnouncementsPage from './pages/admin/AnnouncementsPage';
 import ManualResultsPage from './pages/admin/ManualResultsPage';
 import ExamsPage from './pages/admin/ExamsPage';
@@ -35,6 +36,7 @@ import StudentLayout from './components/student/StudentLayout';
 import StudentDashboard from './pages/student/StudentDashboard';
 import StudentAttendancePage from './pages/student/StudentAttendancePage';
 import StudentFeesPage from './pages/student/StudentFeesPage';
+import StudentPaymentPage from './pages/student/StudentPaymentPage';
 import StudentExamsPage from './pages/student/StudentExamsPage';
 import TakeExamPage from './pages/student/TakeExamPage';
 import StudentMaterialsPage from './pages/student/StudentMaterialsPage';
@@ -94,6 +96,7 @@ export default function App() {
               <Route path="queries" element={<QueriesPage />} />
               <Route path="attendance" element={<AttendancePage />} />
               <Route path="fees" element={<FeesPage />} />
+              <Route path="payments" element={<PaymentsPage />} />
               <Route path="announcements" element={<AnnouncementsPage />} />
               <Route path="manual-results" element={<ManualResultsPage />} />
               <Route path="exams" element={<ExamsPage />} />
@@ -107,6 +110,7 @@ export default function App() {
               <Route index element={<StudentDashboard />} />
               <Route path="attendance" element={<StudentAttendancePage />} />
               <Route path="fees" element={<StudentFeesPage />} />
+              <Route path="payment" element={<StudentPaymentPage />} />
               <Route path="exams" element={<StudentExamsPage />} />
               <Route path="materials" element={<StudentMaterialsPage />} />
               <Route path="results" element={<StudentResultsPage />} />
