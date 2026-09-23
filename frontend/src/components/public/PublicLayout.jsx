@@ -20,6 +20,7 @@ export default function PublicLayout() {
   const navLinks = [
     { to: '/', label: 'Home' },
     { to: '/courses', label: 'Courses' },
+    { to: '/gallery', label: 'Gallery' },
     { to: '/about', label: 'About Us' },
     { to: '/contact', label: 'Contact' },
   ];
@@ -127,7 +128,7 @@ export default function PublicLayout() {
             <div>
               <h4 className="text-white font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2 text-sm">
-                {['Home', 'Courses', 'About Us', 'Contact'].map(l => (
+                {['Home', 'Courses', 'Gallery', 'About Us', 'Contact'].map(l => (
                   <li key={l}><Link to={l === 'Home' ? '/' : `/${l.toLowerCase().replace(' ', '-')}`} className="hover:text-blue-400 transition-colors">{l}</Link></li>
                 ))}
               </ul>

@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, BookOpen, MessageSquare, CalendarCheck,
   CreditCard, Bell, Menu, X, LogOut, Sun, Moon, ChevronRight,
-  ClipboardList, BookOpenCheck, UserCog, FolderOpen, Award, Wallet
+  ClipboardList, BookOpenCheck, UserCog, FolderOpen, Award, Wallet, Image
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -22,6 +22,7 @@ const navItems = [
   { to: '/admin/exams', icon: <ClipboardList size={18} />, label: 'Exams' },
   { to: '/admin/exam-subjects', icon: <BookOpenCheck size={18} />, label: 'Question Bank' },
   { to: '/admin/materials', icon: <FolderOpen size={18} />, label: 'Study Materials' },
+  { to: '/admin/gallery', icon: <Image size={18} />, label: 'Gallery' },
 ];
 
 export default function AdminLayout() {

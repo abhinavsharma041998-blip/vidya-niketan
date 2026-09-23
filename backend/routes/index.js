@@ -28,6 +28,7 @@ const {
 const { protectAdmin, protectStudent, protectTeacher, protectStaff } = require('../middleware/auth');
 const { getPaymentSettings, updatePaymentSettings } = require('../controllers/paymentSettingsController');
 const { submitPayment, getMySubmissions, getAllSubmissions, reviewSubmission } = require('../controllers/paymentSubmissionController');
+const { getGalleryPhotos, uploadGalleryPhoto, updateGalleryPhoto, deleteGalleryPhoto } = require('../controllers/galleryController');
 
 // Wraps multer so its errors (file too large, wrong type) come back as clean JSON
 // instead of crashing into the generic 500 handler.
@@ -88,6 +89,12 @@ router.post('/payment-submissions', protectStudent, handleUpload, submitPayment)
 router.get('/payment-submissions/me', protectStudent, getMySubmissions);
 router.get('/payment-submissions', protectAdmin, getAllSubmissions);
 router.put('/payment-submissions/:id/review', protectAdmin, reviewSubmission);
+
+// ─── Gallery (Public GET, Admin POST/PUT/DELETE with image upload) ────────────
+router.get('/gallery', getGalleryPhotos);
+router.post('/gallery', protectAdmin, handleUpload, uploadGalleryPhoto);
+router.put('/gallery/:id', protectAdmin, handleUpload, updateGalleryPhoto);
+router.delete('/gallery/:id', protectAdmin, deleteGalleryPhoto);
 
 // ─── Notifications ─────────────────────────────────────────────────────────────
 router.post('/notify/sms', protectAdmin, sendSMSHandler);

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useInView } from 'react-intersection-observer';
 import CountUp from 'react-countup';
-import { ArrowRight, BookOpen, Users, Award, Clock, Star, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { ArrowRight, BookOpen, Users, Award, Clock, Star, ChevronLeft, ChevronRight, CheckCircle, Camera } from 'lucide-react';
 import api from '../../utils/api';
 
 // Typing animation hook
@@ -44,12 +44,19 @@ const testimonials = [
 
 export default function HomePage() {
   const [courses, setCourses] = useState([]);
+  const [galleryPhotos, setGalleryPhotos] = useState([]);
   const [testimonialIdx, setTestimonialIdx] = useState(0);
   const { ref: statsRef, inView: statsVisible } = useInView({ triggerOnce: true });
   const typedText = useTyping(['DCA & PGDCA', 'Web Development', 'Tally & Accounts', 'Basic Computer']);
 
   useEffect(() => {
     api.get('/courses?active=true').then(r => setCourses(r.data.data?.slice(0, 3) || []));
+    // Featured photos first; if the admin hasn't featured enough, fall back to the latest ones.
+    api.get('/gallery?featured=true&limit=8').then(r => {
+      const featured = r.data.data || [];
+      if (featured.length >= 4) { setGalleryPhotos(featured); return; }
+      api.get('/gallery?limit=8').then(r2 => setGalleryPhotos(r2.data.data || []));
+    });
     const iv = setInterval(() => setTestimonialIdx(i => (i + 1) % testimonials.length), 4000);
     return () => clearInterval(iv);
   }, []);
@@ -185,8 +192,8 @@ export default function HomePage() {
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-3">
                     <span className={`badge text-xs ${course.category === 'Professional' ? 'badge-blue' :
-                        course.category === 'Advanced' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
-                          'badge-green'
+                      course.category === 'Advanced' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
+                        'badge-green'
                       }`}>{course.category}</span>
                     <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">₹{course.fees?.toLocaleString()}</span>
                   </div>
@@ -207,6 +214,36 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Gallery Preview */}
+      {galleryPhotos.length > 0 && (
+        <section className="py-20 bg-gray-50 dark:bg-gray-900">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-end justify-between mb-12">
+              <div>
+                <p className="text-blue-600 font-semibold text-sm uppercase tracking-widest mb-2 flex items-center gap-2"><Camera size={14} /> Campus Life</p>
+                <h2 className="text-3xl lg:text-4xl font-montserrat font-bold text-gray-900 dark:text-white">Photo Gallery</h2>
+              </div>
+              <Link to="/gallery" className="hidden sm:flex items-center gap-1 text-blue-600 font-medium text-sm hover:gap-2 transition-all">
+                View All <ArrowRight size={16} />
+              </Link>
+            </div>
+            <div className="columns-2 sm:columns-3 lg:columns-4 gap-4 [column-fill:_balance]">
+              {galleryPhotos.map(p => (
+                <Link key={p._id} to="/gallery" className="mb-4 w-full break-inside-avoid block rounded-2xl overflow-hidden relative group shadow-sm hover:shadow-xl transition-all duration-300">
+                  <img src={p.imageUrl} alt={p.title} loading="lazy" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                    <p className="text-white font-semibold text-sm">{p.title}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+            <div className="text-center mt-8 sm:hidden">
+              <Link to="/gallery" className="btn-secondary text-sm">View Full Gallery</Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Testimonials */}
       <section className="py-20 bg-gradient-to-br from-blue-950 to-indigo-950 overflow-hidden">

@@ -9,6 +9,7 @@ import HomePage from './pages/public/HomePage';
 import CoursesPage from './pages/public/CoursesPage';
 import AboutPage from './pages/public/AboutPage';
 import ContactPage from './pages/public/ContactPage';
+import GalleryPage from './pages/public/GalleryPage';
 
 // Auth pages
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -30,6 +31,7 @@ import ExamsPage from './pages/admin/ExamsPage';
 import ExamSubjectsPage from './pages/admin/ExamSubjectsPage';
 import TeachersPage from './pages/admin/TeachersPage';
 import MaterialsPage from './pages/admin/MaterialsPage';
+import AdminGalleryPage from './pages/admin/GalleryPage';
 
 // Student pages
 import StudentLayout from './components/student/StudentLayout';
@@ -79,6 +81,7 @@ export default function App() {
             <Route path="/" element={<PublicLayout />}>
               <Route index element={<HomePage />} />
               <Route path="courses" element={<CoursesPage />} />
+              <Route path="gallery" element={<GalleryPage />} />
               <Route path="about" element={<AboutPage />} />
               <Route path="contact" element={<ContactPage />} />
             </Route>
@@ -103,6 +106,7 @@ export default function App() {
               <Route path="exam-subjects" element={<ExamSubjectsPage />} />
               <Route path="teachers" element={<TeachersPage />} />
               <Route path="materials" element={<MaterialsPage />} />
+              <Route path="gallery" element={<AdminGalleryPage />} />
             </Route>
 
             {/* Student */}
