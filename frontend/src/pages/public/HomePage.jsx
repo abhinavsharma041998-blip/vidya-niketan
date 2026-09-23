@@ -215,9 +215,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Gallery Preview */}
+      {/* Gallery Carousel */}
       {galleryPhotos.length > 0 && (
-        <section className="py-20 bg-gray-50 dark:bg-gray-900">
+        <section className="py-20 bg-gray-50 dark:bg-gray-900 overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-end justify-between mb-12">
               <div>
@@ -228,19 +228,34 @@ export default function HomePage() {
                 View All <ArrowRight size={16} />
               </Link>
             </div>
-            <div className="columns-2 sm:columns-3 lg:columns-4 gap-4 [column-fill:_balance]">
-              {galleryPhotos.map(p => (
-                <Link key={p._id} to="/gallery" className="mb-4 w-full break-inside-avoid block rounded-2xl overflow-hidden relative group shadow-sm hover:shadow-xl transition-all duration-300">
-                  <img src={p.imageUrl} alt={p.title} loading="lazy" className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                    <p className="text-white font-semibold text-sm">{p.title}</p>
+          </div>
+
+          {/* Auto-scrolling strip — full-bleed, edges fade into the page background */}
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-32 z-10 bg-gradient-to-r from-gray-50 dark:from-gray-900 to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-32 z-10 bg-gradient-to-l from-gray-50 dark:from-gray-900 to-transparent" />
+
+            <div className="flex w-max gap-5 animate-scroll-x hover:[animation-play-state:paused] px-4 sm:px-6">
+              {[...galleryPhotos, ...galleryPhotos].map((p, idx) => (
+                <Link
+                  key={`${p._id}-${idx}`}
+                  to="/gallery"
+                  className="relative flex-shrink-0 w-64 sm:w-80 h-80 sm:h-96 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl group transition-all duration-500 hover:-translate-y-2"
+                >
+                  <img src={p.imageUrl} alt={p.title} loading="lazy" draggable={false}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-70 group-hover:opacity-90 transition-opacity" />
+                  <div className="absolute bottom-0 left-0 right-0 p-5 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                    <span className="inline-block text-[10px] uppercase tracking-wider font-semibold text-blue-200 bg-white/10 backdrop-blur-sm px-2.5 py-1 rounded-full mb-2">{p.category}</span>
+                    <p className="text-white font-montserrat font-bold text-lg leading-snug drop-shadow">{p.title}</p>
                   </div>
                 </Link>
               ))}
             </div>
-            <div className="text-center mt-8 sm:hidden">
-              <Link to="/gallery" className="btn-secondary text-sm">View Full Gallery</Link>
-            </div>
+          </div>
+
+          <div className="text-center mt-10 sm:hidden px-4">
+            <Link to="/gallery" className="btn-secondary text-sm">View Full Gallery</Link>
           </div>
         </section>
       )}
