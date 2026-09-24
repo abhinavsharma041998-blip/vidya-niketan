@@ -63,6 +63,13 @@ export default function PublicLayout() {
                   {link.label}
                 </NavLink>
               ))}
+              <Link to="/news" className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
+                </span>
+                News
+              </Link>
             </div>
 
             {/* Actions */}
@@ -95,6 +102,14 @@ export default function PublicLayout() {
                 {link.label}
               </NavLink>
             ))}
+            <Link to="/news" onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-orange-600 dark:text-orange-400">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500" />
+              </span>
+              News
+            </Link>
             <div className="flex gap-2 pt-2 border-t dark:border-gray-800">
               <Link to="/student/login" onClick={() => setMobileOpen(false)} className="flex-1 text-center btn-secondary text-sm py-2">Student</Link>
               <Link to="/teacher/login" onClick={() => setMobileOpen(false)} className="flex-1 text-center btn-secondary text-sm py-2">Teacher</Link>
@@ -128,7 +143,7 @@ export default function PublicLayout() {
             <div>
               <h4 className="text-white font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2 text-sm">
-                {['Home', 'Courses', 'Gallery', 'About Us', 'Contact'].map(l => (
+                {['Home', 'Courses', 'Gallery', 'News', 'About Us', 'Contact'].map(l => (
                   <li key={l}><Link to={l === 'Home' ? '/' : `/${l.toLowerCase().replace(' ', '-')}`} className="hover:text-blue-400 transition-colors">{l}</Link></li>
                 ))}
               </ul>

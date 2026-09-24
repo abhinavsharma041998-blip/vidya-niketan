@@ -130,6 +130,51 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Gallery Carousel — right below the hero, so photos are the first thing visitors see */}
+      {galleryPhotos.length > 0 && (
+        <section className="pt-14 pb-6 sm:pt-16 sm:pb-8 bg-white dark:bg-gray-950 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-end justify-between mb-8">
+              <div>
+                <p className="text-blue-600 font-semibold text-sm uppercase tracking-widest mb-2 flex items-center gap-2"><Camera size={14} /> Campus Life</p>
+                <h2 className="text-3xl lg:text-4xl font-montserrat font-bold text-gray-900 dark:text-white">Photo Gallery</h2>
+              </div>
+              <Link to="/gallery" className="hidden sm:flex items-center gap-1 text-blue-600 font-medium text-sm hover:gap-2 transition-all">
+                View All <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+
+          {/* Auto-scrolling strip — full-bleed, edges fade into the page background */}
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-32 z-10 bg-gradient-to-r from-white dark:from-gray-950 to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-32 z-10 bg-gradient-to-l from-white dark:from-gray-950 to-transparent" />
+
+            <div className="flex w-max gap-5 animate-scroll-x hover:[animation-play-state:paused] px-4 sm:px-6">
+              {[...galleryPhotos, ...galleryPhotos].map((p, idx) => (
+                <Link
+                  key={`${p._id}-${idx}`}
+                  to="/gallery"
+                  className="relative flex-shrink-0 w-64 sm:w-80 h-80 sm:h-96 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl group transition-all duration-500 hover:-translate-y-2"
+                >
+                  <img src={p.imageUrl} alt={p.title} loading="lazy" draggable={false}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-70 group-hover:opacity-90 transition-opacity" />
+                  <div className="absolute bottom-0 left-0 right-0 p-5 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                    <span className="inline-block text-[10px] uppercase tracking-wider font-semibold text-blue-200 bg-white/10 backdrop-blur-sm px-2.5 py-1 rounded-full mb-2">{p.category}</span>
+                    <p className="text-white font-montserrat font-bold text-lg leading-snug drop-shadow">{p.title}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="text-center mt-8 sm:hidden px-4">
+            <Link to="/gallery" className="btn-secondary text-sm">View Full Gallery</Link>
+          </div>
+        </section>
+      )}
+
       {/* Stats Section */}
       <section ref={statsRef} className="py-20 bg-white dark:bg-gray-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -215,51 +260,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Gallery Carousel */}
-      {galleryPhotos.length > 0 && (
-        <section className="py-20 bg-gray-50 dark:bg-gray-900 overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-end justify-between mb-12">
-              <div>
-                <p className="text-blue-600 font-semibold text-sm uppercase tracking-widest mb-2 flex items-center gap-2"><Camera size={14} /> Campus Life</p>
-                <h2 className="text-3xl lg:text-4xl font-montserrat font-bold text-gray-900 dark:text-white">Photo Gallery</h2>
-              </div>
-              <Link to="/gallery" className="hidden sm:flex items-center gap-1 text-blue-600 font-medium text-sm hover:gap-2 transition-all">
-                View All <ArrowRight size={16} />
-              </Link>
-            </div>
-          </div>
-
-          {/* Auto-scrolling strip — full-bleed, edges fade into the page background */}
-          <div className="relative">
-            <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-32 z-10 bg-gradient-to-r from-gray-50 dark:from-gray-900 to-transparent" />
-            <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-32 z-10 bg-gradient-to-l from-gray-50 dark:from-gray-900 to-transparent" />
-
-            <div className="flex w-max gap-5 animate-scroll-x hover:[animation-play-state:paused] px-4 sm:px-6">
-              {[...galleryPhotos, ...galleryPhotos].map((p, idx) => (
-                <Link
-                  key={`${p._id}-${idx}`}
-                  to="/gallery"
-                  className="relative flex-shrink-0 w-64 sm:w-80 h-80 sm:h-96 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl group transition-all duration-500 hover:-translate-y-2"
-                >
-                  <img src={p.imageUrl} alt={p.title} loading="lazy" draggable={false}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-70 group-hover:opacity-90 transition-opacity" />
-                  <div className="absolute bottom-0 left-0 right-0 p-5 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-                    <span className="inline-block text-[10px] uppercase tracking-wider font-semibold text-blue-200 bg-white/10 backdrop-blur-sm px-2.5 py-1 rounded-full mb-2">{p.category}</span>
-                    <p className="text-white font-montserrat font-bold text-lg leading-snug drop-shadow">{p.title}</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className="text-center mt-10 sm:hidden px-4">
-            <Link to="/gallery" className="btn-secondary text-sm">View Full Gallery</Link>
-          </div>
-        </section>
-      )}
-
       {/* Testimonials */}
       <section className="py-20 bg-gradient-to-br from-blue-950 to-indigo-950 overflow-hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -303,7 +303,6 @@ export default function HomePage() {
               Browse Courses <ArrowRight size={18} />
             </Link>
             <Link to="/contact" className="btn-secondary text-base py-3.5 px-8">Contact Us</Link>
-            <Link to="/news" className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white font-semibold text-base py-3.5 px-8 rounded-xl transition-all duration-200 shadow-lg hover:shadow-orange-500/25 hover:-translate-y-0.5">📰 Live News</Link>
           </div>
         </div>
       </section>

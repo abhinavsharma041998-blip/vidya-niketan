@@ -10,6 +10,7 @@ import CoursesPage from './pages/public/CoursesPage';
 import AboutPage from './pages/public/AboutPage';
 import ContactPage from './pages/public/ContactPage';
 import GalleryPage from './pages/public/GalleryPage';
+import NewsPage from './pages/public/NewsPage';
 
 // Auth pages
 import AdminLoginPage from './pages/AdminLoginPage';
@@ -85,6 +86,9 @@ export default function App() {
               <Route path="about" element={<AboutPage />} />
               <Route path="contact" element={<ContactPage />} />
             </Route>
+
+            {/* News — full-screen page with its own header/footer, outside the main site chrome */}
+            <Route path="/news" element={<NewsPage />} />
 
             {/* Auth */}
             <Route path="/admin/login" element={<AdminLoginPage />} />
