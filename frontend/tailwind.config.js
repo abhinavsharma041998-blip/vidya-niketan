@@ -7,6 +7,8 @@ export default {
       fontFamily: {
         poppins: ['Poppins', 'sans-serif'],
         montserrat: ['Montserrat', 'sans-serif'],
+        playfair: ['"Playfair Display"', 'Georgia', 'serif'],
+        serif: ['"Source Serif 4"', 'Georgia', 'serif'],
       },
       colors: {
         brand: {

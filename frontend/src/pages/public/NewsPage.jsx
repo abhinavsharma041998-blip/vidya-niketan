@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft, RefreshCw, Search, Newspaper, Globe, GraduationCap,
-  Flag, Cpu, Trophy, BookOpen, Clock, ExternalLink, TrendingUp,
-  Zap, ChevronRight, Wifi, WifiOff, Briefcase, MapPin
+  Flag, Cpu, Trophy, BookOpen, Clock, ExternalLink,
+  ChevronRight, Wifi, WifiOff, Briefcase, MapPin, Facebook, Twitter, Youtube,
 } from 'lucide-react';
 
 const API_KEY = 'pub_0fd50c7840c94548abfbef1fb5433d2f';
@@ -15,33 +15,33 @@ const STATES = [
   'Bihar', 'Maharashtra', 'Gujarat', 'West Bengal',
 ];
 
+// One restrained accent colour per section — used sparingly for tags, not backgrounds.
 const CATEGORIES = [
-  { id: 'all', label: 'Current Affairs', icon: <TrendingUp size={16} />, query: 'India current affairs news today', color: '#f97316', bg: 'from-orange-500 to-red-500' },
-  { id: 'govt-jobs', label: 'Govt Recruitment', icon: <Briefcase size={16} />, query: '', color: '#16a34a', bg: 'from-green-600 to-emerald-600', isJobs: true },
-  { id: 'education', label: 'Education', icon: <GraduationCap size={16} />, query: 'education India', color: '#3b82f6', bg: 'from-blue-500 to-indigo-600' },
-  { id: 'national', label: 'National', icon: <Flag size={16} />, query: 'India national', color: '#10b981', bg: 'from-emerald-500 to-teal-600' },
-  { id: 'international', label: 'International', icon: <Globe size={16} />, query: 'world international', color: '#8b5cf6', bg: 'from-violet-500 to-purple-600' },
-  { id: 'exam', label: 'Exams', icon: <BookOpen size={16} />, query: 'UPSC SSC exam 2026', color: '#f59e0b', bg: 'from-amber-500 to-orange-500' },
-  { id: 'technology', label: 'Technology', icon: <Cpu size={16} />, query: 'technology AI India', color: '#06b6d4', bg: 'from-cyan-500 to-blue-500' },
-  { id: 'sports', label: 'Sports', icon: <Trophy size={16} />, query: 'India sports cricket', color: '#ec4899', bg: 'from-pink-500 to-rose-500' },
+  { id: 'all', label: 'Current Affairs', icon: <Newspaper size={13} />, query: 'India current affairs news today', tag: '#1d4ed8' },
+  { id: 'govt-jobs', label: 'Govt Recruitment', icon: <Briefcase size={13} />, query: '', tag: '#9a3412', isJobs: true },
+  { id: 'education', label: 'Education', icon: <GraduationCap size={13} />, query: 'education India', tag: '#0f766e' },
+  { id: 'exam', label: 'Exams', icon: <BookOpen size={13} />, query: 'UPSC SSC exam 2026', tag: '#7c3aed' },
+  { id: 'national', label: 'National', icon: <Flag size={13} />, query: 'India national', tag: '#b91c1c' },
+  { id: 'international', label: 'World', icon: <Globe size={13} />, query: 'world international', tag: '#1e293b' },
+  { id: 'technology', label: 'Technology', icon: <Cpu size={13} />, query: 'technology AI India', tag: '#0369a1' },
+  { id: 'sports', label: 'Sports', icon: <Trophy size={13} />, query: 'India sports cricket', tag: '#15803d' },
 ];
 
-// Builds the govt-recruitment search query for a given state — biases results towards
-// notification-style articles that tend to mention posts, eligibility & qualification.
 const govtJobsQuery = (state) => state === 'All India'
   ? 'India government job recruitment vacancy sarkari naukri eligibility qualification'
   : `${state} government job recruitment vacancy eligibility qualification`;
 
 const SAMPLE_NEWS = [
-  { article_id: '1', title: 'UPSC Civil Services 2025 Notification Released – Check Eligibility & Exam Pattern', description: 'Union Public Service Commission has released the official notification for Civil Services Examination 2025. Candidates can apply online from the official website.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'Education Times', category: ['education'] },
-  { article_id: '2', title: 'SSC CGL 2025: Registration Begins, Over 17,000 Vacancies Available', description: 'Staff Selection Commission has opened applications for Combined Graduate Level examination with thousands of vacancies across government departments.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'Govt Jobs Portal', category: ['education'] },
-  { article_id: '3', title: 'India GDP Growth Forecast Revised Upward to 7.2% for FY2025-26', description: 'International Monetary Fund revises India growth projection upward citing strong domestic demand and robust manufacturing sector performance.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'Economic Times', category: ['national'] },
-  { article_id: '4', title: 'New National Education Policy Implementation: Key Changes in Curriculum', description: 'Ministry of Education announces major updates to school curriculum under NEP 2020 with focus on skill development and critical thinking.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'Hindustan Times', category: ['education'] },
+  { article_id: '1', title: 'Customer Engagement Marketing: A New Strategy for Institutes', description: 'A look at how education centres are rethinking outreach for the year ahead, with a focus on community and word-of-mouth.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'Education Times', category: ['education'] },
+  { article_id: '2', title: 'SSC CGL 2026: Registration Begins, Thousands of Vacancies Available', description: 'Staff Selection Commission has opened applications for the Combined Graduate Level examination across government departments.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'Govt Jobs Portal', category: ['education'] },
+  { article_id: '3', title: 'India GDP Growth Forecast Revised Upward for FY2025-26', description: 'Latest projections cite strong domestic demand and a robust manufacturing sector as key drivers of growth.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'Economic Times', category: ['national'] },
+  { article_id: '4', title: 'New Curriculum Guidelines: Key Changes Schools Should Know', description: 'The education ministry has announced updates with a focus on skills and critical thinking in the classroom.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'Hindustan Times', category: ['education'] },
+  { article_id: '5', title: 'Digital Literacy Push: What It Means for Small Institutes', description: 'A new initiative aims to widen access to basic computer training in tier-2 and tier-3 towns.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'Indian Express', category: ['technology'] },
 ];
 
 const SAMPLE_JOBS = [
-  { article_id: 'j1', title: 'HPSSC Hamirpur Recruitment 2026: Various Posts Announced, Graduate & 10+2 Candidates Eligible', description: 'Himachal Pradesh Staff Selection Commission has invited applications for multiple posts. Minimum qualification ranges from 10+2 to Graduate depending on the post; check the official notification for the exact eligibility criteria.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'HP Rojgar Samachar', category: ['govt-jobs'] },
-  { article_id: 'j2', title: 'SSC, Railways & Banking: Latest All-India Government Vacancies This Week', description: 'A roundup of newly announced central government recruitment drives across SSC, Indian Railways and public sector banks, with post-wise qualification requirements.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'Sarkari Naukri Update', category: ['govt-jobs'] },
+  { article_id: 'j1', title: 'HPSSC Hamirpur Recruitment 2026: Multiple Posts, 10+2 & Graduate Eligible', description: 'Himachal Pradesh Staff Selection Commission has invited applications for various posts; minimum qualification ranges from 10+2 to graduate depending on the post. Check the official notification for exact eligibility.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'HP Rojgar Samachar', category: ['govt-jobs'] },
+  { article_id: 'j2', title: 'SSC, Railways & Banking: Latest All-India Government Vacancies This Week', description: 'A roundup of newly announced central recruitment drives across SSC, Indian Railways and public sector banks, with post-wise qualification requirements.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'Sarkari Naukri Update', category: ['govt-jobs'] },
 ];
 
 const timeAgo = (dateStr) => {
@@ -57,11 +57,9 @@ const PlaceholderImg = ({ category, title }) => {
   const cat = CATEGORIES.find(c => c.id === category) || CATEGORIES[0];
   const initials = title?.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase() || 'VN';
   return (
-    <div className={`w-full h-full bg-gradient-to-br ${cat.bg} flex flex-col items-center justify-center relative overflow-hidden`}>
-      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 20% 80%, white 1px, transparent 0), radial-gradient(circle at 80% 20%, white 1px, transparent 0)', backgroundSize: '30px 30px' }} />
-      <div className="text-white/20 text-7xl font-black absolute -bottom-4 -right-4 select-none">{cat.icon}</div>
-      <div className="text-white font-black text-3xl z-10">{initials}</div>
-      <div className="text-white/70 text-xs mt-1 z-10">{cat.label}</div>
+    <div className="w-full h-full flex items-center justify-center relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${cat.tag}14, ${cat.tag}05)` }}>
+      <div className="absolute inset-0 opacity-[0.15]" style={{ backgroundImage: `radial-gradient(circle at 25% 25%, ${cat.tag} 1px, transparent 0)`, backgroundSize: '18px 18px' }} />
+      <span className="font-playfair font-bold text-4xl z-10" style={{ color: cat.tag }}>{initials}</span>
     </div>
   );
 };
@@ -73,6 +71,7 @@ export default function NewsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [online, setOnline] = useState(true);
   const [featured, setFeatured] = useState(null);
@@ -122,7 +121,6 @@ export default function NewsPage() {
 
   useEffect(() => { fetchNews(activeCategory); }, [activeCategory, selectedState]);
 
-  // Auto-refresh every 5 minutes
   useEffect(() => {
     const iv = setInterval(() => fetchNews(activeCategory, true), 5 * 60 * 1000);
     return () => clearInterval(iv);
@@ -133,74 +131,78 @@ export default function NewsPage() {
   );
 
   const rest = filtered.slice(1);
+  const editorsPicks = filtered.slice(1, 6);
   const activeCat = CATEGORIES.find(c => c.id === activeCategory) || CATEGORIES[0];
+  const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white" style={{ fontFamily: "'Poppins', sans-serif" }}>
+    <div className="min-h-screen bg-white text-gray-900 font-sans">
 
-      {/* TOP BAR */}
-      <div className="sticky top-0 z-50 bg-gray-950/95 backdrop-blur-xl border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <Link to="/" className="flex items-center gap-2 text-white/70 hover:text-white transition-colors group flex-shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-              <ArrowLeft size={16} />
-            </div>
-            <span className="text-sm font-medium hidden sm:block">Home</span>
+      {/* Utility bar */}
+      <div className="border-b border-gray-200 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between text-xs text-gray-500">
+          <Link to="/" className="flex items-center gap-1.5 hover:text-gray-900 transition-colors">
+            <ArrowLeft size={12} /> Vidya Niketan Home
           </Link>
-
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center">
-              <Newspaper size={16} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-sm font-bold leading-none">Vidya Niketan News</h1>
-              <p className="text-xs text-white/40 leading-none mt-0.5">Live Updates</p>
-            </div>
+          <div className="hidden sm:flex items-center gap-1.5">
+            {online ? <Wifi size={11} className="text-emerald-600" /> : <WifiOff size={11} className="text-red-500" />}
+            <span>{lastUpdated ? `Updated ${timeAgo(lastUpdated)}` : today}</span>
           </div>
-
-          <div className="flex items-center gap-2">
-            {!online && <WifiOff size={14} className="text-red-400" />}
-            {online && <Wifi size={14} className="text-green-400 animate-pulse" />}
-            {lastUpdated && <span className="text-xs text-white/30 hidden sm:block">{timeAgo(lastUpdated)}</span>}
+          <div className="flex items-center gap-3">
             <button onClick={() => fetchNews(activeCategory, true)} disabled={refreshing}
-              className={`w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all ${refreshing ? 'animate-spin' : ''}`}>
-              <RefreshCw size={14} />
+              className="flex items-center gap-1 hover:text-gray-900 transition-colors">
+              <RefreshCw size={11} className={refreshing ? 'animate-spin' : ''} /> Refresh
             </button>
+            <span className="hidden sm:flex items-center gap-2 text-gray-300">
+              <Facebook size={12} className="hover:text-gray-600 cursor-pointer" />
+              <Twitter size={12} className="hover:text-gray-600 cursor-pointer" />
+              <Youtube size={12} className="hover:text-gray-600 cursor-pointer" />
+            </span>
           </div>
         </div>
+      </div>
 
-        {/* SEARCH */}
-        <div className="max-w-7xl mx-auto px-4 pb-3">
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search news..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder-white/30 focus:outline-none focus:border-orange-500/50 focus:bg-white/8 transition-all"
-            />
+      {/* Masthead */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 pb-6 text-center border-b border-gray-100">
+        <Link to="/news" className="inline-block">
+          <h1 className="font-playfair font-black text-4xl sm:text-5xl tracking-tight text-gray-900">Vidya Niketan Times</h1>
+        </Link>
+        <p className="text-xs sm:text-sm text-gray-400 mt-2 tracking-[0.2em] uppercase">Current Affairs · Exams · Government Recruitment</p>
+      </div>
+
+      {/* Nav */}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
+          <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide">
+            {CATEGORIES.map(cat => (
+              <button key={cat.id} onClick={() => { setActiveCategory(cat.id); setSearchQuery(''); }}
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-3.5 text-xs font-semibold uppercase tracking-wide whitespace-nowrap border-b-2 transition-colors flex-shrink-0 ${activeCategory === cat.id ? 'border-gray-900 text-gray-900' : 'border-transparent text-gray-400 hover:text-gray-700'
+                  }`}>
+                {cat.icon} {cat.label}
+              </button>
+            ))}
           </div>
+          <button onClick={() => setShowSearch(s => !s)} className="p-2 text-gray-400 hover:text-gray-900 transition-colors flex-shrink-0">
+            <Search size={16} />
+          </button>
         </div>
 
-        {/* CATEGORIES */}
-        <div className="max-w-7xl mx-auto px-4 pb-3 flex gap-2 overflow-x-auto scrollbar-hide">
-          {CATEGORIES.map(cat => (
-            <button key={cat.id} onClick={() => { setActiveCategory(cat.id); setSearchQuery(''); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all flex-shrink-0 ${activeCategory === cat.id ? 'text-white shadow-lg scale-105' : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80'}`}
-              style={activeCategory === cat.id ? { background: `linear-gradient(135deg, ${cat.color}cc, ${cat.color}88)` } : {}}>
-              {cat.icon}
-              {cat.label}
-            </button>
-          ))}
-        </div>
+        {showSearch && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-3">
+            <input autoFocus value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search headlines..."
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gray-400" />
+          </div>
+        )}
 
-        {/* STATE FILTER — only for Govt Recruitment tab */}
+        {/* State filter — only for Govt Recruitment */}
         {activeCategory === 'govt-jobs' && (
-          <div className="max-w-7xl mx-auto px-4 pb-3 flex items-center gap-2 flex-wrap">
-            <span className="flex items-center gap-1 text-white/40 text-xs"><MapPin size={12} /> State:</span>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-3 flex items-center gap-1.5 flex-wrap border-t border-gray-100 pt-3">
+            <span className="flex items-center gap-1 text-gray-400 text-xs mr-1"><MapPin size={11} /> State:</span>
             {STATES.map(s => (
               <button key={s} onClick={() => setSelectedState(s)}
-                className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-all ${selectedState === s ? 'bg-green-600 text-white' : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80'}`}>
+                className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${selectedState === s ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  }`}>
                 {s}
               </button>
             ))}
@@ -208,147 +210,147 @@ export default function NewsPage() {
         )}
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      {/* Body */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+
         {activeCategory === 'govt-jobs' && !loading && (
-          <div className="flex items-start gap-2 bg-green-500/10 border border-green-500/20 rounded-xl px-4 py-3 mb-6 text-xs text-green-300">
-            <Briefcase size={14} className="mt-0.5 flex-shrink-0" />
-            <span>Showing recruitment news for <strong>{selectedState}</strong>. Qualification & eligibility mentioned here come from the news snippet — always confirm exact criteria on the official notification before applying.</span>
+          <div className="flex items-start gap-2 border border-amber-200 bg-amber-50 rounded-lg px-4 py-3 mb-8 text-xs text-amber-800">
+            <Briefcase size={13} className="mt-0.5 flex-shrink-0" />
+            <span>Showing recruitment news for <strong>{selectedState}</strong>. Qualification & eligibility come from the article snippet — always confirm exact criteria on the official notification before applying.</span>
           </div>
         )}
+
         {loading ? (
-          <div className="space-y-4">
-            {/* Featured skeleton */}
-            <div className="h-72 bg-white/5 rounded-2xl animate-pulse" />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-48 bg-white/5 rounded-xl animate-pulse" style={{ animationDelay: `${i * 0.1}s` }} />
-              ))}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-2 space-y-4">
+              <div className="h-80 bg-gray-100 rounded-lg animate-pulse" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {[...Array(4)].map((_, i) => <div key={i} className="h-40 bg-gray-100 rounded-lg animate-pulse" />)}
+              </div>
+            </div>
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />)}
             </div>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-white/30">
-            <Newspaper size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="text-lg">No news found</p>
+          <div className="text-center py-24 text-gray-300">
+            <Newspaper size={40} className="mx-auto mb-4" />
+            <p className="text-lg text-gray-500">No news found</p>
             <p className="text-sm mt-1">Try a different search or category</p>
           </div>
         ) : (
-          <>
-            {/* FEATURED ARTICLE */}
-            {featured && !searchQuery && (
-              <a href={featured.link} target="_blank" rel="noopener noreferrer"
-                className="block group relative rounded-2xl overflow-hidden mb-6 h-72 sm:h-96 cursor-pointer">
-                <div className="absolute inset-0">
-                  {featured.image_url && !imgErrors[featured.article_id] ? (
-                    <img src={featured.image_url} alt={featured.title}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      onError={() => setImgErrors(p => ({ ...p, [featured.article_id]: true }))} />
-                  ) : (
-                    <PlaceholderImg category={activeCategory} title={featured.title} />
-                  )}
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="px-2.5 py-1 rounded-full text-xs font-bold text-white" style={{ background: activeCat.color }}>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+            {/* Main column */}
+            <div className="lg:col-span-2">
+              {/* Featured story */}
+              {featured && !searchQuery && (
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-5 mb-10 pb-10 border-b border-gray-100">
+                  <a href={featured.link} target="_blank" rel="noopener noreferrer"
+                    className="sm:col-span-3 block aspect-[4/3] rounded-md overflow-hidden bg-gray-100 group relative">
+                    {featured.image_url && !imgErrors[featured.article_id] ? (
+                      <img src={featured.image_url} alt={featured.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={() => setImgErrors(p => ({ ...p, [featured.article_id]: true }))} />
+                    ) : (
+                      <PlaceholderImg category={activeCategory} title={featured.title} />
+                    )}
+                    <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white rounded" style={{ background: activeCat.tag }}>
                       {activeCat.label}
                     </span>
-                    <span className="flex items-center gap-1 text-white/50 text-xs"><Clock size={10} /> {timeAgo(featured.pubDate)}</span>
-                    <span className="text-white/50 text-xs">• {featured.source_name}</span>
-                  </div>
-                  <h2 className="text-white font-bold text-lg sm:text-2xl leading-tight mb-2 group-hover:text-orange-300 transition-colors line-clamp-2">{featured.title}</h2>
-                  {featured.description && <p className="text-white/60 text-sm line-clamp-2 hidden sm:block">{featured.description}</p>}
-                  <div className="flex items-center gap-1 mt-3 text-orange-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    Read full story <ChevronRight size={14} />
-                  </div>
+                  </a>
+                  <a href={featured.link} target="_blank" rel="noopener noreferrer" className="sm:col-span-2 flex flex-col justify-center group">
+                    <h2 className="font-playfair font-bold text-2xl sm:text-[28px] leading-[1.15] text-gray-900 group-hover:text-gray-600 transition-colors mb-3">
+                      {featured.title}
+                    </h2>
+                    <p className="text-xs text-gray-400 mb-3 uppercase tracking-wide">{featured.source_name} · {timeAgo(featured.pubDate)}</p>
+                    {featured.description && <p className="text-sm text-gray-600 leading-relaxed line-clamp-4">{featured.description}</p>}
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-gray-900 mt-4 group-hover:gap-2 transition-all">
+                      Read full story <ChevronRight size={13} />
+                    </span>
+                  </a>
                 </div>
-                {/* Live badge */}
-                <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full">
-                  <span className="w-1.5 h-1.5 bg-white rounded-full animate-ping" />
-                  LIVE
-                </div>
-              </a>
-            )}
+              )}
 
-            {/* TICKER */}
-            {!searchQuery && news.length > 1 && (
-              <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 mb-6 overflow-hidden">
-                <span className="flex-shrink-0 px-2 py-0.5 bg-orange-500 text-white text-xs font-bold rounded">LATEST</span>
-                <div className="flex gap-8 overflow-hidden">
-                  <p className="text-white/70 text-xs truncate animate-pulse">{news[1]?.title}</p>
-                </div>
-              </div>
-            )}
-
-            {/* NEWS GRID */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(searchQuery ? filtered : rest).map((article, i) => (
-                <a key={article.article_id || i} href={article.link} target="_blank" rel="noopener noreferrer"
-                  className="group bg-white/5 hover:bg-white/8 border border-white/10 hover:border-white/20 rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 flex flex-col"
-                  style={{ animationDelay: `${i * 0.05}s` }}>
-                  {/* Image */}
-                  <div className="h-44 overflow-hidden relative flex-shrink-0">
-                    {article.image_url && !imgErrors[article.article_id] ? (
-                      <img src={article.image_url} alt={article.title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        onError={() => setImgErrors(p => ({ ...p, [article.article_id]: true }))} />
-                    ) : (
-                      <PlaceholderImg category={activeCategory} title={article.title} />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <div className="w-7 h-7 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
-                        <ExternalLink size={12} className="text-white" />
+              {/* Article grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-8">
+                {(searchQuery ? filtered : rest).slice(0, searchQuery ? 20 : 6).map((article, i) => {
+                  const cat = CATEGORIES.find(c => article.category?.includes(c.id)) || activeCat;
+                  return (
+                    <a key={article.article_id || i} href={article.link} target="_blank" rel="noopener noreferrer" className="group flex flex-col">
+                      <div className="aspect-[16/10] rounded-md overflow-hidden bg-gray-100 mb-3 relative">
+                        {article.image_url && !imgErrors[article.article_id] ? (
+                          <img src={article.image_url} alt={article.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            onError={() => setImgErrors(p => ({ ...p, [article.article_id]: true }))} />
+                        ) : (
+                          <PlaceholderImg category={activeCategory} title={article.title} />
+                        )}
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="w-6 h-6 bg-white rounded-md flex items-center justify-center shadow">
+                            <ExternalLink size={11} className="text-gray-700" />
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-4 flex flex-col flex-1">
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      {article.category?.slice(0, 1).map(c => (
-                        <span key={c} className="px-2 py-0.5 rounded-full text-xs font-medium bg-white/10 text-white/60">{c}</span>
-                      ))}
-                      <span className="text-white/30 text-xs flex items-center gap-1 ml-auto"><Clock size={9} />{timeAgo(article.pubDate)}</span>
-                    </div>
-                    <h3 className="text-white font-semibold text-sm leading-snug mb-2 line-clamp-3 group-hover:text-orange-300 transition-colors flex-1">
-                      {article.title}
-                    </h3>
-                    {article.description && (
-                      <p className="text-white/40 text-xs line-clamp-2 mb-3">{article.description}</p>
-                    )}
-                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/5">
-                      <span className="text-white/30 text-xs truncate">{article.source_name || 'News Source'}</span>
-                      <span className="text-orange-400 text-xs font-medium flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2">
-                        Read <ChevronRight size={10} />
-                      </span>
-                    </div>
-                  </div>
-                </a>
-              ))}
+                      <span className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: cat.tag }}>{activeCat.label}</span>
+                      <h3 className="font-playfair font-bold text-base leading-snug text-gray-900 group-hover:text-gray-600 transition-colors mb-2">
+                        {article.title}
+                      </h3>
+                      <p className="text-xs text-gray-400 mt-auto flex items-center gap-1">
+                        <Clock size={10} /> {timeAgo(article.pubDate)} · {article.source_name || 'News Source'}
+                      </p>
+                    </a>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* STATS BAR */}
-            <div className="mt-8 grid grid-cols-3 gap-3">
-              {[
-                { label: 'Articles Today', value: filtered.length, icon: <Newspaper size={16} />, color: 'text-orange-400' },
-                { label: 'Auto Refresh', value: '5 min', icon: <RefreshCw size={16} />, color: 'text-green-400' },
-                { label: 'Source', value: 'Live API', icon: <Zap size={16} />, color: 'text-blue-400' },
-              ].map((s, i) => (
-                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-3 text-center">
-                  <div className={`${s.color} flex justify-center mb-1`}>{s.icon}</div>
-                  <p className="text-white font-bold text-lg">{s.value}</p>
-                  <p className="text-white/30 text-xs">{s.label}</p>
-                </div>
-              ))}
+            {/* Sidebar */}
+            <div className="lg:border-l lg:border-gray-100 lg:pl-8">
+              <h4 className="font-playfair font-bold text-lg text-gray-900 pb-3 mb-5 border-b-2 border-gray-900 inline-block">Editor's Picks</h4>
+              <div className="space-y-5">
+                {editorsPicks.map((article, i) => (
+                  <a key={article.article_id || i} href={article.link} target="_blank" rel="noopener noreferrer"
+                    className="flex gap-3 group items-start">
+                    <span className="font-playfair font-black text-2xl text-gray-200 leading-none flex-shrink-0 w-6">{i + 1}</span>
+                    <div className="w-16 h-16 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
+                      {article.image_url && !imgErrors[`side-${article.article_id}`] ? (
+                        <img src={article.image_url} alt={article.title} className="w-full h-full object-cover"
+                          onError={() => setImgErrors(p => ({ ...p, [`side-${article.article_id}`]: true }))} />
+                      ) : (
+                        <PlaceholderImg category={activeCategory} title={article.title} />
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <h5 className="text-sm font-semibold text-gray-800 leading-snug line-clamp-2 group-hover:text-gray-500 transition-colors">{article.title}</h5>
+                      <p className="text-[11px] text-gray-400 mt-1">{timeAgo(article.pubDate)}</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+
+              {/* Govt jobs quick-link box */}
+              {activeCategory !== 'govt-jobs' && (
+                <button onClick={() => setActiveCategory('govt-jobs')}
+                  className="w-full mt-8 text-left border border-gray-200 rounded-lg p-4 hover:border-gray-400 transition-colors group">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Briefcase size={14} style={{ color: '#9a3412' }} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: '#9a3412' }}>Govt Recruitment</span>
+                  </div>
+                  <p className="text-sm font-medium text-gray-800 group-hover:text-gray-600">Himachal &amp; All-India government job alerts →</p>
+                </button>
+              )}
             </div>
-          </>
+          </div>
         )}
       </div>
 
-      {/* FOOTER */}
-      <div className="text-center py-6 text-white/20 text-xs border-t border-white/5 mt-6">
-        <p>Powered by NewsData.io • Auto-refreshes every 5 minutes</p>
-        <Link to="/" className="text-orange-400/60 hover:text-orange-400 transition-colors mt-1 inline-block">← Back to Vidya Niketan Home</Link>
+      {/* Footer */}
+      <div className="border-t border-gray-100 mt-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 text-center text-xs text-gray-400">
+          <p>News aggregated via NewsData.io · Refreshes automatically every 5 minutes</p>
+          <Link to="/" className="text-gray-500 hover:text-gray-900 transition-colors mt-1 inline-block">← Back to Vidya Niketan Home</Link>
+        </div>
       </div>
     </div>
   );
