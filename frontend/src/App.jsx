@@ -33,6 +33,7 @@ import ExamSubjectsPage from './pages/admin/ExamSubjectsPage';
 import TeachersPage from './pages/admin/TeachersPage';
 import MaterialsPage from './pages/admin/MaterialsPage';
 import AdminGalleryPage from './pages/admin/GalleryPage';
+import RecruitmentNoticesPage from './pages/admin/RecruitmentNoticesPage';
 
 // Student pages
 import StudentLayout from './components/student/StudentLayout';
@@ -111,6 +112,7 @@ export default function App() {
               <Route path="teachers" element={<TeachersPage />} />
               <Route path="materials" element={<MaterialsPage />} />
               <Route path="gallery" element={<AdminGalleryPage />} />
+              <Route path="recruitment-notices" element={<RecruitmentNoticesPage />} />
             </Route>
 
             {/* Student */}

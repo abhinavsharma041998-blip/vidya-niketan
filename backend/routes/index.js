@@ -29,6 +29,7 @@ const { protectAdmin, protectStudent, protectTeacher, protectStaff } = require('
 const { getPaymentSettings, updatePaymentSettings } = require('../controllers/paymentSettingsController');
 const { submitPayment, getMySubmissions, getAllSubmissions, reviewSubmission } = require('../controllers/paymentSubmissionController');
 const { getGalleryPhotos, uploadGalleryPhoto, updateGalleryPhoto, deleteGalleryPhoto } = require('../controllers/galleryController');
+const { getNotices, getAllNoticesAdmin, createNotice, updateNotice, deleteNotice } = require('../controllers/recruitmentNoticeController');
 
 // Wraps multer so its errors (file too large, wrong type) come back as clean JSON
 // instead of crashing into the generic 500 handler.
@@ -95,6 +96,13 @@ router.get('/gallery', getGalleryPhotos);
 router.post('/gallery', protectAdmin, handleUpload, uploadGalleryPhoto);
 router.put('/gallery/:id', protectAdmin, handleUpload, updateGalleryPhoto);
 router.delete('/gallery/:id', protectAdmin, deleteGalleryPhoto);
+
+// ─── Recruitment Notices (admin-curated, verified govt job notices) ───────────
+router.get('/recruitment-notices', getNotices);
+router.get('/recruitment-notices/admin', protectAdmin, getAllNoticesAdmin);
+router.post('/recruitment-notices', protectAdmin, createNotice);
+router.put('/recruitment-notices/:id', protectAdmin, updateNotice);
+router.delete('/recruitment-notices/:id', protectAdmin, deleteNotice);
 
 // ─── Notifications ─────────────────────────────────────────────────────────────
 router.post('/notify/sms', protectAdmin, sendSMSHandler);

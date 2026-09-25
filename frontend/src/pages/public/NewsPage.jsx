@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../../utils/api';
 import {
   ArrowLeft, RefreshCw, Search, Newspaper, Globe, GraduationCap,
   Flag, Cpu, Trophy, BookOpen, Clock, ExternalLink,
   ChevronRight, Wifi, WifiOff, Briefcase, MapPin, Facebook, Twitter, Youtube,
+  CheckCircle2, CalendarClock,
 } from 'lucide-react';
 
 const API_KEY = 'pub_0fd50c7840c94548abfbef1fb5433d2f';
@@ -27,9 +29,40 @@ const CATEGORIES = [
   { id: 'sports', label: 'Sports', icon: <Trophy size={13} />, query: 'India sports cricket', tag: '#15803d' },
 ];
 
-const govtJobsQuery = (state) => state === 'All India'
-  ? 'India government job recruitment vacancy sarkari naukri eligibility qualification'
-  : `${state} government job recruitment vacancy eligibility qualification`;
+// Recruitment boards/keywords worth adding per state — genuinely improves hit-rate over a
+// generic "government jobs <state>" search, since local papers name the board, not the state.
+const STATE_BOARD_KEYWORDS = {
+  'Himachal Pradesh': '(HPSSC OR HPPSC OR "Staff Selection Commission" OR patwari OR "forest guard")',
+  'Punjab': '(PPSC OR PSSSB OR "Punjab Subordinate Services")',
+  'Haryana': '(HPSC OR HSSC OR "Haryana Staff Selection")',
+  'Uttar Pradesh': '(UPPSC OR UPSSSC OR "UP Police recruitment")',
+  'Rajasthan': '(RPSC OR RSMSSB)',
+  'Delhi': '(DSSSB OR "Delhi Subordinate Services")',
+  'Uttarakhand': '(UKPSC OR UKSSSC)',
+  'Bihar': '(BPSC OR "Bihar Staff Selection")',
+  'Madhya Pradesh': '(MPPSC OR "MP Vyapam" OR ESB)',
+};
+
+// Reputable outlets that reliably cover state & central government recruitment —
+// narrowing to these cuts out unrelated "government" noise from the open web search.
+const GOVT_JOBS_DOMAINS = 'tribuneindia.com,hindustantimes.com,indianexpress.com,jagran.com,amarujala.com,ndtv.com,livehindustan.com';
+
+// Dedicated HP job-alert sites — tried first for Himachal Pradesh since they cover HPSSC/HPPSC
+// notices far more completely than general news outlets. If NewsData doesn't index them
+// (small regional sites aren't always covered), fetchNews already falls back automatically.
+const HP_JOBS_DOMAINS = 'himexam.com,hprca.in,dailyhimachalgk.com';
+
+const domainsFor = (state) => state === 'Himachal Pradesh'
+  ? `${HP_JOBS_DOMAINS},${GOVT_JOBS_DOMAINS}`
+  : GOVT_JOBS_DOMAINS;
+
+const govtJobsQuery = (state) => {
+  const base = state === 'All India'
+    ? 'India government job recruitment vacancy sarkari naukri'
+    : `${state} government job recruitment vacancy`;
+  const boards = STATE_BOARD_KEYWORDS[state];
+  return boards ? `${base} OR ${boards}` : base;
+};
 
 const SAMPLE_NEWS = [
   { article_id: '1', title: 'Customer Engagement Marketing: A New Strategy for Institutes', description: 'A look at how education centres are rethinking outreach for the year ahead, with a focus on community and word-of-mouth.', image_url: null, link: '#', pubDate: new Date().toISOString(), source_name: 'Education Times', category: ['education'] },
@@ -76,6 +109,8 @@ export default function NewsPage() {
   const [online, setOnline] = useState(true);
   const [featured, setFeatured] = useState(null);
   const [imgErrors, setImgErrors] = useState({});
+  const [verifiedNotices, setVerifiedNotices] = useState([]);
+  const [noticesLoading, setNoticesLoading] = useState(false);
 
   const fetchNews = useCallback(async (catId = activeCategory, isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -94,12 +129,27 @@ export default function NewsPage() {
         size: '10',
       });
       if (catId === 'international') params.delete('country');
+      if (cat.isJobs) params.set('domainurl', domainsFor(selectedState));
 
       const res = await fetch(`${BASE_URL}?${params}`);
       const data = await res.json();
 
-      if (data.status === 'success' && data.results?.length > 0) {
-        const articles = data.results.filter(a => a.title && a.title !== '[Removed]');
+      let articles = (data.status === 'success' && data.results?.length > 0)
+        ? data.results.filter(a => a.title && a.title !== '[Removed]')
+        : [];
+
+      // Domain-narrowed govt-jobs search can legitimately come back empty on a given day —
+      // retry once without the whitelist before giving up and showing sample data.
+      if (articles.length === 0 && cat.isJobs) {
+        params.delete('domainurl');
+        const res2 = await fetch(`${BASE_URL}?${params}`);
+        const data2 = await res2.json();
+        if (data2.status === 'success' && data2.results?.length > 0) {
+          articles = data2.results.filter(a => a.title && a.title !== '[Removed]');
+        }
+      }
+
+      if (articles.length > 0) {
         setNews(articles);
         setFeatured(articles[0]);
         setLastUpdated(new Date());
@@ -120,6 +170,16 @@ export default function NewsPage() {
   }, [activeCategory, selectedState]);
 
   useEffect(() => { fetchNews(activeCategory); }, [activeCategory, selectedState]);
+
+  // Admin-curated, verified notices — shown above the auto-fetched news on the Govt Recruitment tab.
+  useEffect(() => {
+    if (activeCategory !== 'govt-jobs') { setVerifiedNotices([]); return; }
+    setNoticesLoading(true);
+    api.get('/recruitment-notices', { params: { state: selectedState } })
+      .then(r => setVerifiedNotices(r.data.data || []))
+      .catch(() => setVerifiedNotices([]))
+      .finally(() => setNoticesLoading(false));
+  }, [activeCategory, selectedState]);
 
   useEffect(() => {
     const iv = setInterval(() => fetchNews(activeCategory, true), 5 * 60 * 1000);
@@ -217,6 +277,39 @@ export default function NewsPage() {
           <div className="flex items-start gap-2 border border-amber-200 bg-amber-50 rounded-lg px-4 py-3 mb-8 text-xs text-amber-800">
             <Briefcase size={13} className="mt-0.5 flex-shrink-0" />
             <span>Showing recruitment news for <strong>{selectedState}</strong>. Qualification & eligibility come from the article snippet — always confirm exact criteria on the official notification before applying.</span>
+          </div>
+        )}
+
+        {/* Verified Notices — admin-curated, checked against the official board's own site */}
+        {activeCategory === 'govt-jobs' && !noticesLoading && verifiedNotices.length > 0 && (
+          <div className="mb-10">
+            <div className="flex items-center gap-2 mb-4">
+              <CheckCircle2 size={16} className="text-emerald-600" />
+              <h3 className="font-playfair font-bold text-lg text-gray-900">Verified Notices</h3>
+              <span className="text-xs text-gray-400">— checked against the official board</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {verifiedNotices.map(n => (
+                <div key={n._id} className="border border-emerald-100 bg-emerald-50/40 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-600 text-white">{n.board}</span>
+                    <span className="text-[11px] text-gray-500">{n.state}</span>
+                  </div>
+                  <h4 className="font-playfair font-bold text-sm text-gray-900 leading-snug mb-1.5">{n.title}</h4>
+                  {n.postName && <p className="text-xs text-gray-600 mb-1"><strong>Posts:</strong> {n.postName}{n.vacancies ? ` · ${n.vacancies}` : ''}</p>}
+                  <p className="text-xs text-gray-600 mb-2"><strong>Qualification:</strong> {n.qualification}</p>
+                  {n.lastDate && (
+                    <p className="text-[11px] text-amber-700 flex items-center gap-1 mb-2">
+                      <CalendarClock size={11} /> Apply by {new Date(n.lastDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-3 text-xs font-semibold">
+                    {n.applyLink && <a href={n.applyLink} target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:text-emerald-900">Apply Online →</a>}
+                    <a href={n.officialNotificationLink} target="_blank" rel="noopener noreferrer" className="text-gray-500 hover:text-gray-800">Official Notification</a>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
